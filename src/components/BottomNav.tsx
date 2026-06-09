@@ -41,13 +41,13 @@ export default function BottomNav() {
         </Link>
 
         {/* FAB — Quick add */}
-        <Link
-          href="/quick-add"
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
           className="shrink-0 -mt-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-primary text-primary-content"
           aria-label="Quick add"
         >
           <Plus size={26} strokeWidth={2.2} />
-        </Link>
+        </button>
 
         <Link
           href="/manage"

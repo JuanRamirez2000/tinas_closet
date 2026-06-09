@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { MapPin, Heart, Check, Pencil, Trash2 } from 'lucide-react'
 import PhotoTile from './PhotoTile'
 import { getItemType, getItemColors } from '@/lib/item-tags'
@@ -10,13 +11,13 @@ interface Props {
   tagGroups?: TagGroup[]
   selecting?: boolean
   selected?: boolean
-  onTap?: () => void
+  onTap?: (item: Item) => void
   onToggleFav?: (item: Item) => void
   onEdit?: (item: Item) => void
   onDelete?: (item: Item) => void
 }
 
-export default function ItemCard({
+function ItemCard({
   item, tagGroups, selecting, selected,
   onTap, onToggleFav, onEdit, onDelete,
 }: Props) {
@@ -34,8 +35,8 @@ export default function ItemCard({
     <div
       role="button"
       tabIndex={0}
-      onClick={onTap}
-      onKeyDown={e => e.key === 'Enter' && onTap?.()}
+      onClick={() => onTap?.(item)}
+      onKeyDown={e => e.key === 'Enter' && onTap?.(item)}
       className="text-left group relative cursor-pointer outline-none bg-base-100 rounded-[1.1rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow"
     >
       <div className="relative">
@@ -118,3 +119,5 @@ export default function ItemCard({
     </div>
   )
 }
+
+export default memo(ItemCard)

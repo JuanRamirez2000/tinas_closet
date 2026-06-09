@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
+import SideNav from '@/components/SideNav'
 
 export default function DevLayout({ children }: { children: React.ReactNode }) {
   if (process.env.NODE_ENV !== 'development') {
@@ -7,13 +8,12 @@ export default function DevLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="bg-warning text-warning-content text-xs text-center py-1 font-medium">
+    <div className="min-h-screen flex flex-col bg-base-200">
+      <div className="bg-warning text-warning-content text-[11px] text-center py-1 font-semibold z-40 relative shrink-0">
         DEV MODE — seeded data, no auth
       </div>
-      <main className="flex-1 px-4 py-4 pb-28">
-        {children}
-      </main>
+      <SideNav />
+      <main className="flex-1 min-w-0">{children}</main>
       <BottomNav />
     </div>
   )

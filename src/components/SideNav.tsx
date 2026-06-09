@@ -29,13 +29,13 @@ export default function SideNav() {
         </NavLink>
       </div>
 
-      <Link
-        href="/quick-add"
+      <button
+        onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
         className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary text-primary-content text-[13.5px] font-medium transition-opacity hover:opacity-90"
       >
         <Plus size={16} strokeWidth={2.2} />
         Add piece
-      </Link>
+      </button>
     </nav>
   )
 }

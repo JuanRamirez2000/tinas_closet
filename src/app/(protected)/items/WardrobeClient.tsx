@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useTransition } from 'react'
+import { useState, useMemo, useTransition, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, X, SlidersHorizontal, ArrowUpDown, Box,
@@ -15,6 +15,7 @@ import { bulkMoveItems, toggleFavorite } from '@/app/actions/items'
 import { getItemType, getItemColors, getItemStyles } from '@/lib/item-tags'
 import EditItemModal from './EditItemModal'
 import DeleteConfirmModal from './DeleteConfirmModal'
+import QuickAddModal from './QuickAddModal'
 import type { Item, StorageLocation, TagGroup } from '@/lib/types'
 
 interface Props {
@@ -43,6 +44,13 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
 
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [deletingItem, setDeletingItem] = useState<Item | null>(null)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
+
+  useEffect(() => {
+    const open = () => setQuickAddOpen(true)
+    window.addEventListener('quick-add:open', open)
+    return () => window.removeEventListener('quick-add:open', open)
+  }, [])
 
   const typeGroup  = tagGroups.find(g => g.name === 'Type')
   const colorGroup = tagGroups.find(g => g.name === 'Color')
@@ -93,14 +101,15 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
 
   function exitSelect() { setSelecting(false); setSelected(new Set()) }
 
-  function handleItemTap(item: Item) {
+  const handleItemTap = useCallback((item: Item) => {
     if (selecting) toggleSelect(item.id)
     else setEditingItem(item)
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selecting])
 
-  function handleToggleFav(item: Item) {
+  const handleToggleFav = useCallback((item: Item) => {
     startTransition(() => toggleFavorite(item.id, !item.favorite))
-  }
+  }, [startTransition])
 
   function doMove(locationId: string) {
     startTransition(async () => {
@@ -163,7 +172,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
           </div>
 
           {/* Search */}
-          <label className="mt-3 flex items-center gap-2 bg-base-200/70 rounded-2xl px-3.5 h-11 text-base-content/55">
+          <label className="mt-3 flex items-center gap-2 bg-base-100 border border-base-300 rounded-2xl px-3.5 h-11 text-base-content/55">
             <Search size={18} strokeWidth={1.9} />
             <input
               value={search}
@@ -212,7 +221,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
                   tagGroups={tagGroups}
                   selecting={selecting}
                   selected={selected.has(item.id)}
-                  onTap={() => handleItemTap(item)}
+                  onTap={handleItemTap}
                   onToggleFav={handleToggleFav}
                   onEdit={setEditingItem}
                   onDelete={setDeletingItem}
@@ -249,6 +258,14 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
           </button>
         </div>
       </BottomSheet>
+
+      {/* ── Quick add modal ─────────────────────────────────────── */}
+      <QuickAddModal
+        open={quickAddOpen}
+        storageLocations={storageLocations}
+        tagGroups={tagGroups}
+        onClose={() => setQuickAddOpen(false)}
+      />
 
       {/* ── Edit modal ──────────────────────────────────────────── */}
       <EditItemModal
