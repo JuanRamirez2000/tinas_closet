@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { colorHex } from '@/lib/closet-colors'
 import GarmentGlyph from './GarmentGlyph'
 import type { CSSProperties } from 'react'
@@ -24,11 +25,16 @@ export default function PhotoTile({
   if (imageUrl) {
     return (
       <div
-        className={`overflow-hidden bg-base-200 ${className}`}
+        className={`relative overflow-hidden bg-base-200 ${className}`}
         style={{ borderRadius: radius, ...style }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl} alt={name ?? ''} className="w-full h-full object-cover" />
+        <Image
+          src={imageUrl}
+          alt={name ?? ''}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+        />
       </div>
     )
   }

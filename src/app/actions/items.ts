@@ -3,10 +3,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-export async function createItem(formData: FormData) {
+async function getUser() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthenticated')
+  return { supabase, user }
+}
+
+export async function createItem(formData: FormData) {
+  const { supabase, user } = await getUser()
 
   const name = formData.get('name') as string
   const notes = formData.get('notes') as string | null
@@ -34,9 +39,7 @@ export async function createItem(formData: FormData) {
 }
 
 export async function updateItem(itemId: string, formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthenticated')
+  const { supabase } = await getUser()
 
   const name = formData.get('name') as string
   const notes = formData.get('notes') as string | null
@@ -53,7 +56,6 @@ export async function updateItem(itemId: string, formData: FormData) {
 
   if (error) throw error
 
-  // Replace all tags for this item
   await supabase.from('item_tags').delete().eq('item_id', itemId)
   if (tagIds.length > 0) {
     await supabase.from('item_tags').insert(
@@ -66,14 +68,14 @@ export async function updateItem(itemId: string, formData: FormData) {
 }
 
 export async function deleteItem(itemId: string) {
-  const supabase = await createClient()
+  const { supabase } = await getUser()
   const { error } = await supabase.from('items').delete().eq('id', itemId)
   if (error) throw error
   revalidatePath('/items')
 }
 
 export async function bulkMoveItems(itemIds: string[], storageLocationId: string) {
-  const supabase = await createClient()
+  const { supabase } = await getUser()
   const { error } = await supabase
     .from('items')
     .update({ storage_location_id: storageLocationId })
@@ -83,7 +85,7 @@ export async function bulkMoveItems(itemIds: string[], storageLocationId: string
 }
 
 export async function toggleFavorite(itemId: string, favorite: boolean) {
-  const supabase = await createClient()
+  const { supabase } = await getUser()
   const { error } = await supabase.from('items').update({ favorite }).eq('id', itemId)
   if (error) throw error
   revalidatePath('/items')

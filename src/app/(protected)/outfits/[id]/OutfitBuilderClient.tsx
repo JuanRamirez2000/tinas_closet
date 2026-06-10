@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useState, useTransition, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ChevronLeft, X, Trash2, Plus, Shuffle, Search,
@@ -33,15 +33,21 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(outfit.name)
 
-  const slotMap = new Map<string, Item[]>()
-  for (const oi of outfit.outfit_items) {
-    if (!oi.slot_id) continue
-    const existing = slotMap.get(oi.slot_id) ?? []
-    existing.push(oi.items)
-    slotMap.set(oi.slot_id, existing)
-  }
+  const slotMap = useMemo(() => {
+    const map = new Map<string, Item[]>()
+    for (const oi of outfit.outfit_items) {
+      if (!oi.slot_id) continue
+      const existing = map.get(oi.slot_id) ?? []
+      existing.push(oi.items)
+      map.set(oi.slot_id, existing)
+    }
+    return map
+  }, [outfit.outfit_items])
 
-  const unslotted = outfit.outfit_items.filter(oi => !oi.slot_id).map(oi => oi.items)
+  const unslotted = useMemo(
+    () => outfit.outfit_items.filter(oi => !oi.slot_id).map(oi => oi.items),
+    [outfit.outfit_items]
+  )
 
   function handlePickItem(item: Item) {
     if (!activeSlot) return

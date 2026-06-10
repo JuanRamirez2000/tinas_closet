@@ -7,6 +7,7 @@ import {
   MapPin, ChevronDown, Box, Check,
 } from 'lucide-react'
 import { updateItem, deleteItem, toggleFavorite } from '@/app/actions/items'
+import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import Chip from '@/components/Chip'
 import PhotoTile from '@/components/PhotoTile'
 import BottomSheet from '@/components/BottomSheet'
@@ -24,6 +25,7 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
+  const { upload, isUploading } = usePhotoUpload()
 
   const [name, setName] = useState(item.name)
   const [notes, setNotes] = useState(item.notes ?? '')
@@ -36,34 +38,36 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
     (item.item_tags as { tags: Tag }[] | undefined)?.map(it => it.tags.id) ?? []
   )
 
-  const typeGroup   = tagGroups.find(g => g.name === 'Type')
-  const colorGroup  = tagGroups.find(g => g.name === 'Color')
-  const styleGroup  = tagGroups.find(g => g.name === 'Style')
+  // Capture initial values once — used to detect unsaved changes
+  const originalRef = useRef({
+    name: item.name,
+    notes: item.notes ?? '',
+    imageUrl: item.image_url ?? null,
+    storageId: item.storage_location_id ?? null,
+    tagIds: [...((item.item_tags as { tags: Tag }[] | undefined)?.map(it => it.tags.id) ?? [])].sort().join(','),
+  })
+
+  const typeGroup    = tagGroups.find(g => g.name === 'Type')
+  const colorGroup   = tagGroups.find(g => g.name === 'Color')
+  const styleGroup   = tagGroups.find(g => g.name === 'Style')
+  const seasonGroup  = tagGroups.find(g => g.name === 'Season')
   const customGroups = tagGroups.filter(g => !g.is_system)
 
-  const original = {
-    name: item.name, notes: item.notes ?? '',
-    imageUrl: item.image_url ?? null, storageId: item.storage_location_id ?? null,
-    tagIds: [...((item.item_tags as { tags: Tag }[] | undefined)?.map(it => it.tags.id) ?? [])].sort().join(','),
-  }
+  const { current: orig } = originalRef
   const dirty =
-    name !== original.name ||
-    notes !== original.notes ||
-    imageUrl !== original.imageUrl ||
-    storageId !== original.storageId ||
-    [...tagIds].sort().join(',') !== original.tagIds
+    name !== orig.name ||
+    notes !== orig.notes ||
+    imageUrl !== orig.imageUrl ||
+    storageId !== orig.storageId ||
+    [...tagIds].sort().join(',') !== orig.tagIds
 
   function toggleTag(tagId: string) {
     setTagIds(prev => prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId])
   }
 
   async function handlePhotoChange(file: File) {
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch('/api/upload', { method: 'POST', body: fd })
-    if (!res.ok) return
-    const { url } = await res.json()
-    setImageUrl(url)
+    const url = await upload(file)
+    if (url) setImageUrl(url)
   }
 
   function handleSave() {
@@ -144,9 +148,13 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
           />
           <button
             onClick={() => fileRef.current?.click()}
-            className="absolute bottom-3 right-3 px-3 h-9 rounded-full bg-base-100/90 backdrop-blur-sm text-[13px] font-medium shadow flex items-center gap-1.5"
+            disabled={isUploading}
+            className="absolute bottom-3 right-3 px-3 h-9 rounded-full bg-base-100/90 backdrop-blur-sm text-[13px] font-medium shadow flex items-center gap-1.5 disabled:opacity-60"
           >
-            <Camera size={16} strokeWidth={1.7} /> {imageUrl ? 'Change' : 'Add photo'}
+            {isUploading
+              ? <span className="loading loading-spinner loading-xs" />
+              : <Camera size={16} strokeWidth={1.7} />}
+            {imageUrl ? 'Change' : 'Add photo'}
           </button>
           <input
             ref={fileRef}
@@ -218,6 +226,19 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
                 <SectionLabel>Style</SectionLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {(styleGroup.tags ?? []).map(tag => (
+                    <Chip key={tag.id} size="sm" active={tagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
+                      {tag.value}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {seasonGroup && (seasonGroup.tags ?? []).length > 0 && (
+              <div>
+                <SectionLabel>Season</SectionLabel>
+                <div className="flex flex-wrap gap-1.5">
+                  {(seasonGroup.tags ?? []).map(tag => (
                     <Chip key={tag.id} size="sm" active={tagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
                       {tag.value}
                     </Chip>

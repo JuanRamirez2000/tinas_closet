@@ -3,6 +3,8 @@
 import { useState, useRef, useTransition } from 'react'
 import { X, Camera, Check, Plus } from 'lucide-react'
 import Chip from '@/components/Chip'
+import FieldLabel from '@/components/FieldLabel'
+import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { createItem } from '@/app/actions/items'
 import type { StorageLocation, TagGroup } from '@/lib/types'
 
@@ -15,7 +17,7 @@ interface Props {
 
 export default function QuickAddModal({ open, storageLocations, tagGroups, onClose }: Props) {
   const [isPending, startTransition] = useTransition()
-  const [isUploading, setIsUploading] = useState(false)
+  const { upload, isUploading } = usePhotoUpload()
   const fileRef = useRef<HTMLInputElement>(null)
   const [flash, setFlash] = useState(false)
 
@@ -24,9 +26,10 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [storageId, setStorageId] = useState<string | null>(storageLocations[0]?.id ?? null)
 
-  const typeGroup  = tagGroups.find(g => g.name === 'Type')
-  const colorGroup = tagGroups.find(g => g.name === 'Color')
-  const styleGroup = tagGroups.find(g => g.name === 'Style')
+  const typeGroup   = tagGroups.find(g => g.name === 'Type')
+  const colorGroup  = tagGroups.find(g => g.name === 'Color')
+  const styleGroup  = tagGroups.find(g => g.name === 'Style')
+  const seasonGroup = tagGroups.find(g => g.name === 'Season')
 
   const selectedType   = typeGroup?.tags?.find(t => selectedTagIds.includes(t.id))
   const selectedColors = colorGroup?.tags?.filter(t => selectedTagIds.includes(t.id)).map(t => t.value) ?? []
@@ -42,18 +45,8 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
   if (!open) return null
 
   async function handleFile(file: File) {
-    if (!file.type.startsWith('image/')) return
-    setIsUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      if (!res.ok) throw new Error('Upload failed')
-      const { url } = await res.json()
-      setImageUrl(url)
-    } finally {
-      setIsUploading(false)
-    }
+    const url = await upload(file)
+    if (url) setImageUrl(url)
   }
 
   function toggleTag(tagId: string) {
@@ -155,7 +148,7 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
           {/* Right: fields */}
           <div className="flex flex-col gap-4">
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mb-1.5">Name</div>
+              <FieldLabel>Name</FieldLabel>
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -166,7 +159,7 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
 
             {typeGroup && (typeGroup.tags ?? []).length > 0 && (
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mb-1.5">Type</div>
+                <FieldLabel>Type</FieldLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {(typeGroup.tags ?? []).map(tag => (
                     <Chip key={tag.id} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
@@ -179,7 +172,7 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
 
             {colorGroup && (colorGroup.tags ?? []).length > 0 && (
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mb-1.5">Color</div>
+                <FieldLabel>Color</FieldLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {(colorGroup.tags ?? []).map(tag => (
                     <Chip key={tag.id} color={tag.value} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
@@ -192,7 +185,7 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
 
             {styleGroup && (styleGroup.tags ?? []).length > 0 && (
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mb-1.5">Style</div>
+                <FieldLabel>Style</FieldLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {(styleGroup.tags ?? []).map(tag => (
                     <Chip key={tag.id} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
@@ -203,9 +196,22 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
               </div>
             )}
 
+            {seasonGroup && (seasonGroup.tags ?? []).length > 0 && (
+              <div>
+                <FieldLabel>Season</FieldLabel>
+                <div className="flex flex-wrap gap-1.5">
+                  {(seasonGroup.tags ?? []).map(tag => (
+                    <Chip key={tag.id} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
+                      {tag.value}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {storageLocations.length > 0 && (
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mb-1.5">Where it lives</div>
+                <FieldLabel>Where it lives</FieldLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {storageLocations.map(loc => {
                     const base = (loc as StorageLocation & { base_locations?: { name: string } }).base_locations

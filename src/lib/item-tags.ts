@@ -20,3 +20,8 @@ export function getItemStyles(item: Item, styleGroup?: TagGroup): string[] {
   if (!styleGroup) return []
   return itemTagList(item).filter(it => it.tags.group_id === styleGroup.id).map(it => it.tags.value)
 }
+
+export function getItemSeasons(item: Item, seasonGroup?: TagGroup): string[] {
+  if (!seasonGroup) return []
+  return itemTagList(item).filter(it => it.tags.group_id === seasonGroup.id).map(it => it.tags.value)
+}

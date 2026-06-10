@@ -3,36 +3,43 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-export async function createOutfitSlot(name: string, display_order: number, allow_multiple: boolean) {
+async function getUser() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthenticated')
+  return { supabase, user }
+}
+
+export async function createOutfitSlot(name: string, display_order: number, allow_multiple: boolean) {
+  const { supabase, user } = await getUser()
   const { error } = await supabase.from('outfit_slots').insert({ name, display_order, allow_multiple, created_by: user.id })
   if (error) throw error
   revalidatePath('/outfits')
+  revalidatePath('/manage')
 }
 
 export async function updateOutfitSlot(id: string, name: string, display_order: number, allow_multiple: boolean) {
-  const supabase = await createClient()
+  const { supabase } = await getUser()
   const { error } = await supabase.from('outfit_slots').update({ name, display_order, allow_multiple }).eq('id', id)
   if (error) throw error
   revalidatePath('/outfits')
+  revalidatePath('/manage')
 }
 
 export async function deleteOutfitSlot(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await getUser()
   const { error } = await supabase.from('outfit_slots').delete().eq('id', id)
   if (error) throw error
   revalidatePath('/outfits')
+  revalidatePath('/manage')
 }
 
 // Place an item into a slot within an outfit.
 // For single-item slots, replaces any existing assignment for that slot.
 export async function setSlotItem(outfitId: string, slotId: string, itemId: string, allowMultiple: boolean) {
-  const supabase = await createClient()
+  const { supabase } = await getUser()
 
   if (!allowMultiple) {
-    // Remove any existing item in this slot for this outfit
     await supabase
       .from('outfit_items')
       .delete()
@@ -40,7 +47,6 @@ export async function setSlotItem(outfitId: string, slotId: string, itemId: stri
       .eq('slot_id', slotId)
   }
 
-  // Avoid duplicates if allowMultiple
   const { data: existing } = await supabase
     .from('outfit_items')
     .select('item_id')
@@ -62,7 +68,7 @@ export async function setSlotItem(outfitId: string, slotId: string, itemId: stri
 }
 
 export async function removeSlotItem(outfitId: string, slotId: string | null, itemId: string) {
-  const supabase = await createClient()
+  const { supabase } = await getUser()
   let q = supabase
     .from('outfit_items')
     .delete()

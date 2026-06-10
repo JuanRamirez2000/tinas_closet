@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useRef, useTransition, useEffect } from 'react'
-import { X, Camera, Heart } from 'lucide-react'
+import { X, Heart } from 'lucide-react'
 import Chip from '@/components/Chip'
+import FieldLabel from '@/components/FieldLabel'
+import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { updateItem } from '@/app/actions/items'
 import type { Item, StorageLocation, TagGroup } from '@/lib/types'
+import { Camera } from 'lucide-react'
 
 interface Props {
   item: Item | null
@@ -13,17 +16,9 @@ interface Props {
   onClose: () => void
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mb-1.5">
-      {children}
-    </div>
-  )
-}
-
 export default function EditItemModal({ item, storageLocations, tagGroups, onClose }: Props) {
   const [isPending, startTransition] = useTransition()
-  const [isUploading, setIsUploading] = useState(false)
+  const { upload, isUploading } = usePhotoUpload()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState('')
@@ -43,25 +38,16 @@ export default function EditItemModal({ item, storageLocations, tagGroups, onClo
     setFavorite(item.favorite)
   }, [item])
 
-  const typeGroup  = tagGroups.find(g => g.name === 'Type')
-  const colorGroup = tagGroups.find(g => g.name === 'Color')
-  const styleGroup = tagGroups.find(g => g.name === 'Style')
+  const typeGroup   = tagGroups.find(g => g.name === 'Type')
+  const colorGroup  = tagGroups.find(g => g.name === 'Color')
+  const styleGroup  = tagGroups.find(g => g.name === 'Style')
+  const seasonGroup = tagGroups.find(g => g.name === 'Season')
 
   if (!item) return null
 
   async function handleFile(file: File) {
-    if (!file.type.startsWith('image/')) return
-    setIsUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      if (!res.ok) throw new Error('Upload failed')
-      const { url } = await res.json()
-      setImageUrl(url)
-    } finally {
-      setIsUploading(false)
-    }
+    const url = await upload(file)
+    if (url) setImageUrl(url)
   }
 
   function toggleTag(tagId: string) {
@@ -218,6 +204,19 @@ export default function EditItemModal({ item, storageLocations, tagGroups, onClo
                 <FieldLabel>Style</FieldLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {(styleGroup.tags ?? []).map(tag => (
+                    <Chip key={tag.id} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
+                      {tag.value}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {seasonGroup && (seasonGroup.tags ?? []).length > 0 && (
+              <div>
+                <FieldLabel>Season</FieldLabel>
+                <div className="flex flex-wrap gap-1.5">
+                  {(seasonGroup.tags ?? []).map(tag => (
                     <Chip key={tag.id} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
                       {tag.value}
                     </Chip>

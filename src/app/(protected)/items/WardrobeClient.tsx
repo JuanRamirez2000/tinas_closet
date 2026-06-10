@@ -12,7 +12,7 @@ import BottomSheet from '@/components/BottomSheet'
 import ColorDot from '@/components/ColorDot'
 import SectionLabel from '@/components/SectionLabel'
 import { bulkMoveItems, toggleFavorite } from '@/app/actions/items'
-import { getItemType, getItemColors, getItemStyles } from '@/lib/item-tags'
+import { getItemType, getItemColors, getItemStyles, getItemSeasons } from '@/lib/item-tags'
 import EditItemModal from './EditItemModal'
 import DeleteConfirmModal from './DeleteConfirmModal'
 import QuickAddModal from './QuickAddModal'
@@ -36,6 +36,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
 
   const [filterColors, setFilterColors] = useState<string[]>([])
   const [filterStyles, setFilterStyles] = useState<string[]>([])
+  const [filterSeasons, setFilterSeasons] = useState<string[]>([])
   const [filterLocations, setFilterLocations] = useState<string[]>([])
   const [filterFavorites, setFilterFavorites] = useState(false)
 
@@ -52,59 +53,61 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
     return () => window.removeEventListener('quick-add:open', open)
   }, [])
 
-  const typeGroup  = tagGroups.find(g => g.name === 'Type')
-  const colorGroup = tagGroups.find(g => g.name === 'Color')
-  const styleGroup = tagGroups.find(g => g.name === 'Style')
+  const typeGroup   = useMemo(() => tagGroups.find(g => g.name === 'Type'),   [tagGroups])
+  const colorGroup  = useMemo(() => tagGroups.find(g => g.name === 'Color'),  [tagGroups])
+  const styleGroup  = useMemo(() => tagGroups.find(g => g.name === 'Style'),  [tagGroups])
+  const seasonGroup = useMemo(() => tagGroups.find(g => g.name === 'Season'), [tagGroups])
 
-  const types  = useMemo(() => typeGroup?.tags?.map(t => t.value) ?? [], [typeGroup])
-  const colors = useMemo(() => colorGroup?.tags?.map(t => t.value) ?? [], [colorGroup])
-  const styles = useMemo(() => styleGroup?.tags?.map(t => t.value) ?? [], [styleGroup])
+  const types   = useMemo(() => typeGroup?.tags?.map(t => t.value) ?? [],   [typeGroup])
+  const colors  = useMemo(() => colorGroup?.tags?.map(t => t.value) ?? [],  [colorGroup])
+  const styles  = useMemo(() => styleGroup?.tags?.map(t => t.value) ?? [],  [styleGroup])
+  const seasons = useMemo(() => seasonGroup?.tags?.map(t => t.value) ?? [], [seasonGroup])
 
   const activeCount =
-    filterColors.length + filterStyles.length + filterLocations.length + (filterFavorites ? 1 : 0)
+    filterColors.length + filterStyles.length + filterSeasons.length +
+    filterLocations.length + (filterFavorites ? 1 : 0)
 
   function clearFilters() {
-    setFilterColors([]); setFilterStyles([]); setFilterLocations([])
-    setFilterFavorites(false); setSelectedType('All'); setSearch('')
+    setFilterColors([]); setFilterStyles([]); setFilterSeasons([])
+    setFilterLocations([]); setFilterFavorites(false); setSelectedType('All'); setSearch('')
   }
 
   const filtered = useMemo(() => {
     return items.filter(item => {
-      const iType   = getItemType(item, typeGroup)
-      const iColors = getItemColors(item, colorGroup)
-      const iStyles = getItemStyles(item, styleGroup)
+      const iType    = getItemType(item, typeGroup)
+      const iColors  = getItemColors(item, colorGroup)
+      const iStyles  = getItemStyles(item, styleGroup)
+      const iSeasons = getItemSeasons(item, seasonGroup)
       if (selectedType !== 'All' && iType !== selectedType) return false
       if (filterColors.length && !iColors.some(c => filterColors.includes(c))) return false
       if (filterStyles.length && !iStyles.some(s => filterStyles.includes(s))) return false
+      if (filterSeasons.length && !iSeasons.some(s => filterSeasons.includes(s))) return false
       if (filterLocations.length && !filterLocations.includes(item.storage_location_id ?? '')) return false
       if (filterFavorites && !item.favorite) return false
       if (search) {
-        const hay = [item.name, iType ?? '', ...iColors, ...iStyles, item.notes ?? ''].join(' ').toLowerCase()
+        const hay = [item.name, iType ?? '', ...iColors, ...iStyles, ...iSeasons, item.notes ?? ''].join(' ').toLowerCase()
         if (!hay.includes(search.toLowerCase())) return false
       }
       return true
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, selectedType, filterColors, filterStyles, filterLocations, filterFavorites, search])
+  }, [items, selectedType, filterColors, filterStyles, filterSeasons, filterLocations, filterFavorites, search, typeGroup, colorGroup, styleGroup, seasonGroup])
 
   function toggleArr<T>(arr: T[], val: T): T[] {
     return arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val]
   }
 
-  function toggleSelect(id: string) {
-    setSelected(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
   function exitSelect() { setSelecting(false); setSelected(new Set()) }
 
   const handleItemTap = useCallback((item: Item) => {
-    if (selecting) toggleSelect(item.id)
-    else setEditingItem(item)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (selecting) {
+      setSelected(prev => {
+        const next = new Set(prev)
+        next.has(item.id) ? next.delete(item.id) : next.add(item.id)
+        return next
+      })
+    } else {
+      setEditingItem(item)
+    }
   }, [selecting])
 
   const handleToggleFav = useCallback((item: Item) => {
@@ -120,9 +123,9 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
   }
 
   const filterProps = {
-    colors, styles, storageLocations,
-    filterColors, filterStyles, filterLocations, filterFavorites,
-    setFilterColors, setFilterStyles, setFilterLocations, setFilterFavorites,
+    colors, styles, seasons, storageLocations,
+    filterColors, filterStyles, filterSeasons, filterLocations, filterFavorites,
+    setFilterColors, setFilterStyles, setFilterSeasons, setFilterLocations, setFilterFavorites,
     toggleArr, filtered,
   }
 
@@ -314,23 +317,30 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
 interface FilterBodyProps {
   colors: string[]
   styles: string[]
+  seasons: string[]
   storageLocations: StorageLocation[]
   filterColors: string[]
   filterStyles: string[]
+  filterSeasons: string[]
   filterLocations: string[]
   filterFavorites: boolean
   setFilterColors: React.Dispatch<React.SetStateAction<string[]>>
   setFilterStyles: React.Dispatch<React.SetStateAction<string[]>>
+  setFilterSeasons: React.Dispatch<React.SetStateAction<string[]>>
   setFilterLocations: React.Dispatch<React.SetStateAction<string[]>>
   setFilterFavorites: React.Dispatch<React.SetStateAction<boolean>>
   toggleArr: <T>(arr: T[], val: T) => T[]
   filtered: Item[]
 }
 
+const SEASON_ICON: Record<string, string> = {
+  Spring: '🌸', Summer: '☀️', Fall: '🍂', Winter: '❄️', 'All-season': '✦',
+}
+
 function FilterBody({
-  colors, styles, storageLocations,
-  filterColors, filterStyles, filterLocations, filterFavorites,
-  setFilterColors, setFilterStyles, setFilterLocations, setFilterFavorites,
+  colors, styles, seasons, storageLocations,
+  filterColors, filterStyles, filterSeasons, filterLocations, filterFavorites,
+  setFilterColors, setFilterStyles, setFilterSeasons, setFilterLocations, setFilterFavorites,
   toggleArr,
 }: FilterBodyProps) {
   return (
@@ -343,6 +353,19 @@ function FilterBody({
       >
         <Heart size={15} strokeWidth={1.8} fill={filterFavorites ? 'currentColor' : 'none'} /> Favorites
       </button>
+
+      {seasons.length > 0 && (
+        <div className="mb-4">
+          <SectionLabel>Season</SectionLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {seasons.map(s => (
+              <Chip key={s} size="sm" active={filterSeasons.includes(s)} onClick={() => setFilterSeasons(prev => toggleArr(prev, s))}>
+                <span>{SEASON_ICON[s] ?? ''}</span> {s}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
 
       {colors.length > 0 && (
         <div className="mb-4">
