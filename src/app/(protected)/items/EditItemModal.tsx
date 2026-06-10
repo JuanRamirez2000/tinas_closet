@@ -81,7 +81,7 @@ export default function EditItemModal({ item, storageLocations, tagGroups, onClo
       style={{ background: 'rgba(60,50,70,.28)', backdropFilter: 'blur(2px)' }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-base-100 rounded-3xl shadow-xl w-full my-auto max-w-2xl">
+      <div className="bg-base-100 rounded-3xl shadow-xl w-full my-auto max-w-2xl lg:max-w-3xl">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-base-200">
@@ -92,7 +92,7 @@ export default function EditItemModal({ item, storageLocations, tagGroups, onClo
         </div>
 
         {/* Body */}
-        <div className="p-6 grid sm:grid-cols-[200px_1fr] gap-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-6 grid sm:grid-cols-[200px_1fr] lg:grid-cols-[240px_1fr] gap-6 max-h-[75vh] overflow-y-auto">
 
           {/* Left: photo + favorite */}
           <div>

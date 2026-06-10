@@ -121,181 +121,206 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
 
   return (
     <div className="flex flex-col min-h-screen">
-      <div className="px-4 pt-3 pb-2 shrink-0">
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="px-4 lg:px-6 pt-3 lg:pt-6 pb-2 lg:pb-4 shrink-0">
         <h1 className="font-serif text-[26px] leading-none">Closets &amp; Tags</h1>
         <p className="text-[12px] text-base-content/45 mt-1">Where things live, and how you label them</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-24">
+      {/* ── Content ────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-4 lg:px-6 pb-24 lg:pb-10">
+        <div className="lg:grid lg:grid-cols-[360px_1fr] lg:gap-5 lg:items-start">
 
-        {/* ── Storage spots ── */}
-        <div className="flex items-center justify-between mt-2 mb-2">
-          <SectionLabel>Storage spots</SectionLabel>
-          <button onClick={openNewLoc} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
-            <Plus size={14} /> Add
-          </button>
-        </div>
+          {/* ══ LEFT COLUMN ══════════════════════════════════════ */}
+          <div className="lg:flex lg:flex-col lg:gap-4">
 
-        <div className="flex flex-col gap-2 mb-8">
-          {storageLocations.map(loc => {
-            const base = bases.find(b => b.id === loc.base_id)
-            const count = locationCounts[loc.id] ?? 0
-            return (
-              <div key={loc.id} className="flex items-center gap-3 bg-base-100 border border-base-200 rounded-2xl p-3">
-                <span className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center text-base-content/55">
-                  <Box size={19} strokeWidth={1.7} />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium leading-tight">{loc.name}</div>
-                  {base && (
-                    <div className="text-[12px] text-base-content/45 flex items-center gap-1.5">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60" />
-                      {base.name}
-                    </div>
-                  )}
-                </div>
-                <span className="text-[12px] text-base-content/45 tabular-nums">{count}</span>
-                <button
-                  onClick={() => openEditLoc(loc as StorageLocation)}
-                  className="btn btn-circle btn-ghost btn-sm text-base-content/55"
-                >
-                  <Pencil size={17} strokeWidth={1.8} />
+            {/* Storage spots */}
+            <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5">
+              <div className="flex items-center justify-between mt-2 lg:mt-0 mb-2">
+                <SectionLabel>Storage spots</SectionLabel>
+                <button onClick={openNewLoc} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
+                  <Plus size={14} /> Add
                 </button>
               </div>
-            )
-          })}
-          {storageLocations.length === 0 && (
-            <p className="text-[13px] text-base-content/40 text-center py-6">No storage spots yet.</p>
-          )}
-        </div>
 
-        {/* ── Groups (owners) ── */}
-        <div className="flex items-center justify-between mb-2">
-          <SectionLabel>Groups</SectionLabel>
-          <button onClick={() => setAddBaseOpen(true)} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
-            <Plus size={14} /> Add
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 mb-8">
-          {bases.map(base => (
-            <div key={base.id} className="flex items-center gap-1.5 bg-base-200 rounded-full px-3 py-1.5 text-[13px]">
-              <span>{base.name}</span>
-              <button
-                onClick={() => { if (confirm(`Delete group "${base.name}"?`)) startTransition(() => deleteBaseLocation(base.id)) }}
-                className="opacity-40 hover:opacity-100 hover:text-error"
-                disabled={isPending}
-              >
-                <X size={13} strokeWidth={2.1} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Tags ── */}
-        <div className="flex items-center justify-between mb-3">
-          <SectionLabel>Tags</SectionLabel>
-        </div>
-        <div className="space-y-5">
-          {tagGroups.map(group => (
-            <TagGroupSection
-              key={group.id}
-              group={group}
-              newValue={newTagValues[group.id] ?? ''}
-              onNewValueChange={v => setNewTagValues(prev => ({ ...prev, [group.id]: v }))}
-              onAdd={() => handleAddTag(group.id, newTagValues[group.id] ?? '')}
-              onRemove={tagId => startTransition(() => deleteTag(tagId))}
-              onDeleteGroup={!group.is_system ? () => {
-                if (confirm(`Delete tag group "${group.name}"?`)) {
-                  startTransition(() => deleteTagGroup(group.id))
-                }
-              } : undefined}
-              isPending={isPending}
-            />
-          ))}
-        </div>
-        <form
-          onSubmit={e => {
-            e.preventDefault()
-            if (!newGroupName.trim()) return
-            startTransition(async () => {
-              await createTagGroup(newGroupName.trim())
-              setNewGroupName('')
-            })
-          }}
-          className="flex gap-2 mt-5 mb-10"
-        >
-          <input
-            className="flex-1 bg-base-200/60 rounded-xl px-3.5 h-11 outline-none focus:bg-base-200 text-[14px]"
-            placeholder="New tag group name…"
-            value={newGroupName}
-            onChange={e => setNewGroupName(e.target.value)}
-          />
-          <button className="btn btn-primary rounded-xl" type="submit" disabled={isPending}>Add</button>
-        </form>
-
-        {/* ── Outfit slots ── */}
-        <div className="flex items-center justify-between mb-3">
-          <SectionLabel>Outfit slots</SectionLabel>
-        </div>
-        <div className="flex flex-col gap-2 mb-4">
-          {outfitSlots.map(slot => (
-            <div key={slot.id} className="flex items-center gap-3 bg-base-100 border border-base-200 rounded-2xl p-3">
-              <span className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center text-base-content/55">
-                <Layers size={18} strokeWidth={1.7} />
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium leading-tight">{slot.name}</div>
-                <div className="text-[11px] text-base-content/40 mt-0.5">
-                  order {slot.display_order}{slot.allow_multiple ? ' · multiple' : ''}
-                </div>
+              <div className="flex flex-col gap-2 mb-8 lg:mb-0">
+                {storageLocations.map(loc => {
+                  const base = bases.find(b => b.id === loc.base_id)
+                  const count = locationCounts[loc.id] ?? 0
+                  return (
+                    <div key={loc.id} className="flex items-center gap-3 bg-base-100 lg:bg-base-200/40 border border-base-200 rounded-2xl p-3">
+                      <span className="w-10 h-10 rounded-xl bg-base-200 lg:bg-base-100 flex items-center justify-center text-base-content/55">
+                        <Box size={19} strokeWidth={1.7} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium leading-tight">{loc.name}</div>
+                        {base && (
+                          <div className="text-[12px] text-base-content/45 flex items-center gap-1.5">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60" />
+                            {base.name}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[12px] text-base-content/45 tabular-nums">{count}</span>
+                      <button
+                        onClick={() => openEditLoc(loc as StorageLocation)}
+                        className="btn btn-circle btn-ghost btn-sm text-base-content/55"
+                      >
+                        <Pencil size={17} strokeWidth={1.8} />
+                      </button>
+                    </div>
+                  )
+                })}
+                {storageLocations.length === 0 && (
+                  <p className="text-[13px] text-base-content/40 text-center py-6">No storage spots yet.</p>
+                )}
               </div>
-              <button
-                onClick={() => openEditSlot(slot)}
-                className="btn btn-circle btn-ghost btn-sm text-base-content/55"
-              >
-                <Pencil size={17} strokeWidth={1.8} />
-              </button>
-              <button
-                onClick={() => { if (confirm(`Delete slot "${slot.name}"?`)) startTransition(() => deleteOutfitSlot(slot.id)) }}
-                className="btn btn-circle btn-ghost btn-sm text-error/60 hover:text-error"
-                disabled={isPending}
-              >
-                <Trash2 size={17} strokeWidth={1.8} />
-              </button>
             </div>
-          ))}
-        </div>
 
-        {/* New slot inline form */}
-        <div className="flex gap-2 items-center mb-2">
-          <input
-            value={newSlotName}
-            onChange={e => setNewSlotName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleAddSlot() }}
-            placeholder="New slot name…"
-            className="flex-1 bg-base-200/60 rounded-xl px-3.5 h-11 outline-none focus:bg-base-200 text-[14px]"
-          />
-          <button
-            onClick={handleAddSlot}
-            disabled={!newSlotName.trim() || isPending}
-            className="btn btn-primary rounded-xl disabled:opacity-40"
-          >
-            <Plus size={14} /> Add
-          </button>
+            {/* Groups */}
+            <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5">
+              <div className="flex items-center justify-between mb-2">
+                <SectionLabel>Groups</SectionLabel>
+                <button onClick={() => setAddBaseOpen(true)} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 mb-8 lg:mb-0">
+                {bases.map(base => (
+                  <div key={base.id} className="flex items-center gap-1.5 bg-base-200 rounded-full px-3 py-1.5 text-[13px]">
+                    <span>{base.name}</span>
+                    <button
+                      onClick={() => { if (confirm(`Delete group "${base.name}"?`)) startTransition(() => deleteBaseLocation(base.id)) }}
+                      className="opacity-40 hover:opacity-100 hover:text-error"
+                      disabled={isPending}
+                    >
+                      <X size={13} strokeWidth={2.1} />
+                    </button>
+                  </div>
+                ))}
+                {bases.length === 0 && (
+                  <p className="text-[13px] text-base-content/40 py-2">No groups yet.</p>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* ══ RIGHT COLUMN ═════════════════════════════════════ */}
+          <div className="lg:flex lg:flex-col lg:gap-4">
+
+            {/* Tags */}
+            <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5">
+              <div className="flex items-center justify-between mt-4 lg:mt-0 mb-3">
+                <SectionLabel>Tags</SectionLabel>
+              </div>
+              <div className="space-y-5">
+                {tagGroups.map(group => (
+                  <TagGroupSection
+                    key={group.id}
+                    group={group}
+                    newValue={newTagValues[group.id] ?? ''}
+                    onNewValueChange={v => setNewTagValues(prev => ({ ...prev, [group.id]: v }))}
+                    onAdd={() => handleAddTag(group.id, newTagValues[group.id] ?? '')}
+                    onRemove={tagId => startTransition(() => deleteTag(tagId))}
+                    onDeleteGroup={!group.is_system ? () => {
+                      if (confirm(`Delete tag group "${group.name}"?`)) {
+                        startTransition(() => deleteTagGroup(group.id))
+                      }
+                    } : undefined}
+                    isPending={isPending}
+                  />
+                ))}
+              </div>
+              <form
+                onSubmit={e => {
+                  e.preventDefault()
+                  if (!newGroupName.trim()) return
+                  startTransition(async () => {
+                    await createTagGroup(newGroupName.trim())
+                    setNewGroupName('')
+                  })
+                }}
+                className="flex gap-2 mt-5"
+              >
+                <input
+                  className="flex-1 bg-base-200/60 rounded-xl px-3.5 h-11 outline-none focus:bg-base-200 text-[14px]"
+                  placeholder="New tag group name…"
+                  value={newGroupName}
+                  onChange={e => setNewGroupName(e.target.value)}
+                />
+                <button className="btn btn-primary rounded-xl" type="submit" disabled={isPending}>Add</button>
+              </form>
+            </div>
+
+            {/* Outfit slots */}
+            <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5 mt-4 lg:mt-0">
+              <div className="flex items-center justify-between mb-3">
+                <SectionLabel>Outfit slots</SectionLabel>
+              </div>
+              <div className="flex flex-col gap-2 mb-4">
+                {outfitSlots.map(slot => (
+                  <div key={slot.id} className="flex items-center gap-3 bg-base-100 lg:bg-base-200/40 border border-base-200 rounded-2xl p-3">
+                    <span className="w-10 h-10 rounded-xl bg-base-200 lg:bg-base-100 flex items-center justify-center text-base-content/55">
+                      <Layers size={18} strokeWidth={1.7} />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium leading-tight">{slot.name}</div>
+                      <div className="text-[11px] text-base-content/40 mt-0.5">
+                        order {slot.display_order}{slot.allow_multiple ? ' · multiple' : ''}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => openEditSlot(slot)}
+                      className="btn btn-circle btn-ghost btn-sm text-base-content/55"
+                    >
+                      <Pencil size={17} strokeWidth={1.8} />
+                    </button>
+                    <button
+                      onClick={() => { if (confirm(`Delete slot "${slot.name}"?`)) startTransition(() => deleteOutfitSlot(slot.id)) }}
+                      className="btn btn-circle btn-ghost btn-sm text-error/60 hover:text-error"
+                      disabled={isPending}
+                    >
+                      <Trash2 size={17} strokeWidth={1.8} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 items-center mb-2">
+                <input
+                  value={newSlotName}
+                  onChange={e => setNewSlotName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddSlot() }}
+                  placeholder="New slot name…"
+                  className="flex-1 bg-base-200/60 rounded-xl px-3.5 h-11 outline-none focus:bg-base-200 text-[14px]"
+                />
+                <button
+                  onClick={handleAddSlot}
+                  disabled={!newSlotName.trim() || isPending}
+                  className="btn btn-primary rounded-xl disabled:opacity-40"
+                >
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-[13px] text-base-content/60 cursor-pointer select-none mb-8 lg:mb-0">
+                <button
+                  type="button"
+                  onClick={() => setNewSlotMultiple(v => !v)}
+                  className={newSlotMultiple ? 'text-primary' : 'text-base-content/30'}
+                >
+                  {newSlotMultiple ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                </button>
+                Allow multiple items in this slot
+              </label>
+            </div>
+
+          </div>
         </div>
-        <label className="flex items-center gap-2 text-[13px] text-base-content/60 mb-8 cursor-pointer select-none">
-          <button
-            type="button"
-            onClick={() => setNewSlotMultiple(v => !v)}
-            className={newSlotMultiple ? 'text-primary' : 'text-base-content/30'}
-          >
-            {newSlotMultiple ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-          </button>
-          Allow multiple items in this slot
-        </label>
       </div>
 
-      {/* Location editor sheet */}
+      {/* ── Location editor sheet ────────────────────────────── */}
       <BottomSheet open={!!editingLoc} onClose={() => setEditingLoc(null)} title={editingLoc?.id ? 'Edit spot' : 'New storage spot'}>
         <div className="flex flex-col gap-4">
           <div>
@@ -338,7 +363,7 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
         </div>
       </BottomSheet>
 
-      {/* Add group sheet */}
+      {/* ── Add group sheet ──────────────────────────────────── */}
       <BottomSheet open={addBaseOpen} onClose={() => setAddBaseOpen(false)} title="New group">
         <div className="flex flex-col gap-4">
           <div>
@@ -377,7 +402,7 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
         </div>
       </BottomSheet>
 
-      {/* Edit slot sheet */}
+      {/* ── Edit slot sheet ──────────────────────────────────── */}
       <BottomSheet open={!!editingSlot} onClose={() => setEditingSlot(null)} title="Edit slot">
         <div className="flex flex-col gap-4">
           <div>
