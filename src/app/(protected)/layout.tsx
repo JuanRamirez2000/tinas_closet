@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import BottomNav from '@/components/BottomNav'
-import SideNav from '@/components/SideNav'
+import SettingsShell from '@/components/SettingsShell'
+import type { TagGroup } from '@/lib/types'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -9,21 +9,21 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   if (!user) redirect('/login')
 
-  const { data: member } = await supabase
-    .from('members')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [{ data: member }, { data: profile }, { data: rawTagGroups }] = await Promise.all([
+    supabase.from('members').select('user_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('profiles').select('closet_name, theme').eq('id', user.id).single(),
+    supabase.from('tag_groups').select('*, tags(*)').order('name'),
+  ])
 
   if (!member) redirect('/not-a-member')
 
   return (
-    <div className="min-h-screen flex flex-col bg-base-200">
-      <SideNav />
-      <main className="flex-1 min-w-0">
-        {children}
-      </main>
-      <BottomNav />
-    </div>
+    <SettingsShell
+      initialClosetName={profile?.closet_name ?? ''}
+      initialTheme={profile?.theme ?? 'blush'}
+      initialTagGroups={(rawTagGroups as TagGroup[]) ?? []}
+    >
+      {children}
+    </SettingsShell>
   )
 }

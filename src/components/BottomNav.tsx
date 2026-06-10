@@ -2,9 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid, Layers, Settings2, Plus } from 'lucide-react'
+import { LayoutGrid, Layers, Settings2, Plus, Settings } from 'lucide-react'
 
-export default function BottomNav() {
+interface Props {
+  onOpenSettings: () => void
+}
+
+export default function BottomNav({ onOpenSettings }: Props) {
   const pathname = usePathname()
 
   const isWardrobe = pathname.startsWith('/items') || pathname === '/'
@@ -57,8 +61,13 @@ export default function BottomNav() {
           <span className="text-[10.5px] font-medium">Manage</span>
         </Link>
 
-        {/* Empty flex slot to balance FAB */}
-        <div className="flex-1" />
+        <button
+          onClick={onOpenSettings}
+          className={`flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${inactive}`}
+        >
+          <Settings size={22} strokeWidth={1.9} />
+          <span className="text-[10.5px] font-medium">Settings</span>
+        </button>
       </div>
     </nav>
   )

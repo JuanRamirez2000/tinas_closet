@@ -4,9 +4,9 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; email: string; name: string | null }
-        Insert: { id: string; email: string; name?: string | null }
-        Update: { email?: string; name?: string | null }
+        Row: { id: string; email: string; name: string | null; closet_name: string | null; theme: string }
+        Insert: { id: string; email: string; name?: string | null; closet_name?: string | null; theme?: string }
+        Update: { email?: string; name?: string | null; closet_name?: string | null; theme?: string }
       }
       members: {
         Row: { user_id: string }
@@ -97,6 +97,7 @@ export interface Database {
 
 // Convenience types for joined queries
 export type Profile = Database['public']['Tables']['profiles']['Row']
+export type UserSettings = { closet_name: string | null; theme: string }
 export type BaseLocation = Database['public']['Tables']['base_locations']['Row']
 export type OutfitSlot = Database['public']['Tables']['outfit_slots']['Row']
 export type StorageLocation = Database['public']['Tables']['storage_locations']['Row'] & {

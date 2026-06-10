@@ -2,12 +2,19 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import type { TagGroup } from '@/lib/types'
 
 async function getUser() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthenticated')
   return { supabase, user }
+}
+
+export async function getTagGroups(): Promise<TagGroup[]> {
+  const { supabase } = await getUser()
+  const { data } = await supabase.from('tag_groups').select('*, tags(*)').order('name')
+  return (data as TagGroup[]) ?? []
 }
 
 export async function createTagGroup(name: string) {

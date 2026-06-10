@@ -12,9 +12,9 @@ export default function DevLayout({ children }: { children: React.ReactNode }) {
       <div className="bg-warning text-warning-content text-[11px] text-center py-1 font-semibold z-40 relative shrink-0">
         DEV MODE — seeded data, no auth
       </div>
-      <SideNav />
+      <SideNav closetName="Dev mode" onOpenSettings={() => {}} />
       <main className="flex-1 min-w-0">{children}</main>
-      <BottomNav />
+      <BottomNav onOpenSettings={() => {}} />
     </div>
   )
 }
