@@ -10,12 +10,19 @@ async function getUser() {
   return { supabase, user }
 }
 
-export async function createOutfit(name: string) {
+export async function createOutfit(name: string, forUserId?: string) {
   const { supabase, user } = await getUser()
+
+  let created_by = user.id
+  if (forUserId && forUserId !== user.id) {
+    const { data: member } = await supabase.from('members').select('is_admin').eq('user_id', user.id).maybeSingle()
+    if (!member?.is_admin) throw new Error('Unauthorized')
+    created_by = forUserId
+  }
 
   const { data, error } = await supabase
     .from('outfits')
-    .insert({ name, created_by: user.id })
+    .insert({ name, created_by })
     .select('id')
     .single()
   if (error) throw error

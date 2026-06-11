@@ -41,7 +41,7 @@ export default function OutfitsClient({ outfits, slots }: Props) {
   function handleCreate() {
     if (!newName.trim()) return
     startTransition(async () => {
-      const id = await createOutfit(newName.trim())
+      const id = await createOutfit(newName.trim(), viewingUserId || undefined)
       closeModal()
       router.push(`/${viewingUserId}/outfits/${id}`)
     })

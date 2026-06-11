@@ -3,7 +3,7 @@
 import { useState, useMemo, useTransition, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useIsAdmin } from '@/context/admin'
-import { useViewingClosetName } from '@/context/user'
+import { useViewingClosetName, useViewingUserId } from '@/context/user'
 import {
   Search, X, SlidersHorizontal, ArrowUpDown, Box,
   LayoutGrid, Plus, Heart,
@@ -31,6 +31,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
   const router = useRouter()
   const isAdmin = useIsAdmin()
   const viewingClosetName = useViewingClosetName()
+  const viewingUserId = useViewingUserId()
   const [isPending, startTransition] = useTransition()
 
   const [search, setSearch] = useState('')
@@ -275,6 +276,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
         storageLocations={storageLocations}
         tagGroups={tagGroups}
         onClose={() => setQuickAddOpen(false)}
+        forUserId={viewingUserId || undefined}
       />
 
       {/* ── Edit modal ──────────────────────────────────────────── */}

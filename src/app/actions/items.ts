@@ -10,7 +10,7 @@ async function getUser() {
   return { supabase, user }
 }
 
-export async function createItem(formData: FormData) {
+export async function createItem(formData: FormData, forUserId?: string) {
   const { supabase, user } = await getUser()
 
   const name = formData.get('name') as string
@@ -20,9 +20,17 @@ export async function createItem(formData: FormData) {
   const status = formData.get('status') as string | null
   const tagIds = formData.getAll('tag_ids') as string[]
 
+  // Admin can create items on behalf of another user
+  let created_by = user.id
+  if (forUserId && forUserId !== user.id) {
+    const { data: member } = await supabase.from('members').select('is_admin').eq('user_id', user.id).maybeSingle()
+    if (!member?.is_admin) throw new Error('Unauthorized')
+    created_by = forUserId
+  }
+
   const { data: item, error } = await supabase
     .from('items')
-    .insert({ name, notes, image_url, storage_location_id, status, created_by: user.id })
+    .insert({ name, notes, image_url, storage_location_id, status, created_by })
     .select('id')
     .single()
 

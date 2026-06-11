@@ -13,9 +13,10 @@ interface Props {
   storageLocations: StorageLocation[]
   tagGroups: TagGroup[]
   onClose: () => void
+  forUserId?: string
 }
 
-export default function QuickAddModal({ open, storageLocations, tagGroups, onClose }: Props) {
+export default function QuickAddModal({ open, storageLocations, tagGroups, onClose, forUserId }: Props) {
   const [isPending, startTransition] = useTransition()
   const { upload, isUploading } = usePhotoUpload()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -72,7 +73,7 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
       if (storageId) fd.set('storage_location_id', storageId)
       fd.set('status', 'available')
       selectedTagIds.forEach(id => fd.append('tag_ids', id))
-      await createItem(fd)
+      await createItem(fd, forUserId)
       if (andClose) {
         resetForm()
         onClose()
