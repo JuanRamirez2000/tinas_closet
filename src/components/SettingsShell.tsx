@@ -11,6 +11,7 @@ interface Props {
   initialClosetName: string
   initialTheme: string
   initialTagGroups: TagGroup[]
+  isAdmin?: boolean
 }
 
 export default function SettingsShell({
@@ -18,6 +19,7 @@ export default function SettingsShell({
   initialClosetName,
   initialTheme,
   initialTagGroups,
+  isAdmin = false,
 }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [closetName, setClosetName] = useState(initialClosetName)
@@ -46,6 +48,7 @@ export default function SettingsShell({
         currentTheme={currentTheme}
         onThemeChange={setCurrentTheme}
         initialTagGroups={initialTagGroups}
+        isAdmin={isAdmin}
       />
     </div>
   )

@@ -87,7 +87,7 @@ export default function QuickAddModal({ open, storageLocations, tagGroups, onClo
   return (
     <div
       className="fixed inset-0 z-60 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
-      style={{ background: 'rgba(60,50,70,.28)', backdropFilter: 'blur(2px)' }}
+      style={{ background: 'rgba(60,50,70,.5)' }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="bg-base-100 rounded-3xl shadow-xl w-full my-auto max-w-2xl lg:max-w-3xl">

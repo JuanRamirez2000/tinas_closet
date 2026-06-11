@@ -10,7 +10,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   if (!user) redirect('/login')
 
   const [{ data: member }, { data: profile }, { data: rawTagGroups }] = await Promise.all([
-    supabase.from('members').select('user_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('members').select('user_id, is_admin').eq('user_id', user.id).maybeSingle(),
     supabase.from('profiles').select('closet_name, theme').eq('id', user.id).single(),
     supabase.from('tag_groups').select('*, tags(*)').order('name'),
   ])
@@ -20,8 +20,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     <SettingsShell
       initialClosetName={profile?.closet_name ?? ''}
-      initialTheme={profile?.theme ?? 'blush'}
+      initialTheme={profile?.theme ?? 'cupcake'}
       initialTagGroups={(rawTagGroups as TagGroup[]) ?? []}
+      isAdmin={member.is_admin ?? false}
     >
       {children}
     </SettingsShell>

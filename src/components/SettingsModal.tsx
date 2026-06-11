@@ -1,17 +1,51 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { X, Check, Plus } from 'lucide-react'
+import { X, Check, Plus, ShieldCheck } from 'lucide-react'
 import ColorDot from '@/components/ColorDot'
 import { saveSettings } from '@/app/actions/settings'
 import { createTag, deleteTag, createTagGroup, deleteTagGroup, getTagGroups } from '@/app/actions/tags'
+import { getAdminData, approveMember } from '@/app/actions/admin'
 import type { TagGroup } from '@/lib/types'
+import type { MemberInfo, PendingUser } from '@/app/actions/admin'
 
 const THEMES = [
-  { id: 'blush',   label: 'Blush'   },
-  { id: 'cupcake', label: 'Cupcake' },
-  { id: 'dark',    label: 'Dark'    },
-  { id: 'dracula', label: 'Dracula' },
+  // DaisyUI built-ins (page order)
+  { id: 'light',        label: 'Light'        },
+  { id: 'dark',         label: 'Dark'         },
+  { id: 'cupcake',      label: 'Cupcake'      },
+  { id: 'bumblebee',    label: 'Bumblebee'    },
+  { id: 'emerald',      label: 'Emerald'      },
+  { id: 'corporate',    label: 'Corporate'    },
+  { id: 'synthwave',    label: 'Synthwave'    },
+  { id: 'retro',        label: 'Retro'        },
+  { id: 'cyberpunk',    label: 'Cyberpunk'    },
+  { id: 'valentine',    label: 'Valentine'    },
+  { id: 'halloween',    label: 'Halloween'    },
+  { id: 'garden',       label: 'Garden'       },
+  { id: 'forest',       label: 'Forest'       },
+  { id: 'aqua',         label: 'Aqua'         },
+  { id: 'lofi',         label: 'Lo-Fi'        },
+  { id: 'pastel',       label: 'Pastel'       },
+  { id: 'fantasy',      label: 'Fantasy'      },
+  { id: 'wireframe',    label: 'Wireframe'    },
+  { id: 'black',        label: 'Black'        },
+  { id: 'luxury',       label: 'Luxury'       },
+  { id: 'dracula',      label: 'Dracula'      },
+  { id: 'cmyk',         label: 'CMYK'         },
+  { id: 'autumn',       label: 'Autumn'       },
+  { id: 'business',     label: 'Business'     },
+  { id: 'acid',         label: 'Acid'         },
+  { id: 'lemonade',     label: 'Lemonade'     },
+  { id: 'night',        label: 'Night'        },
+  { id: 'coffee',       label: 'Coffee'       },
+  { id: 'winter',       label: 'Winter'       },
+  { id: 'dim',          label: 'Dim'          },
+  { id: 'nord',         label: 'Nord'         },
+  { id: 'sunset',       label: 'Sunset'       },
+  { id: 'caramellatte', label: 'Caramellatte' },
+  { id: 'abyss',        label: 'Abyss'        },
+  { id: 'silk',         label: 'Silk'         },
 ]
 
 interface Props {
@@ -22,6 +56,7 @@ interface Props {
   currentTheme: string
   onThemeChange: (theme: string) => void
   initialTagGroups: TagGroup[]
+  isAdmin?: boolean
 }
 
 export default function SettingsModal({
@@ -29,17 +64,21 @@ export default function SettingsModal({
   closetName, onClosetNameChange,
   currentTheme, onThemeChange,
   initialTagGroups,
+  isAdmin = false,
 }: Props) {
   const [isPending, startTransition] = useTransition()
   const [localName, setLocalName] = useState(closetName)
   const [tagGroups, setTagGroups] = useState(initialTagGroups)
   const [newTagValues, setNewTagValues] = useState<Record<string, string>>({})
   const [newGroupName, setNewGroupName] = useState('')
+  const [members, setMembers] = useState<MemberInfo[]>([])
+  const [pending, setPending] = useState<PendingUser[]>([])
 
   useEffect(() => {
     if (open) {
       setLocalName(closetName)
       setTagGroups(initialTagGroups)
+      if (isAdmin) refreshAdminData()
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -93,10 +132,23 @@ export default function SettingsModal({
     })
   }
 
+  async function refreshAdminData() {
+    const data = await getAdminData()
+    setMembers(data.members)
+    setPending(data.pending)
+  }
+
+  function handleApprove(userId: string) {
+    startTransition(async () => {
+      await approveMember(userId)
+      await refreshAdminData()
+    })
+  }
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-4 overflow-y-auto"
-      style={{ background: 'rgba(60,50,70,.28)', backdropFilter: 'blur(2px)' }}
+      style={{ background: 'rgba(60,50,70,.5)' }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="bg-base-100 rounded-3xl shadow-xl w-full my-auto max-w-xl">
@@ -130,7 +182,7 @@ export default function SettingsModal({
           {/* ── Theme ─────── */}
           <div>
             <SectionTitle>Theme</SectionTitle>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto">
               {THEMES.map(t => (
                 <ThemeCard
                   key={t.id}
@@ -142,6 +194,47 @@ export default function SettingsModal({
               ))}
             </div>
           </div>
+
+          {/* ── Members (admin only) ─── */}
+          {isAdmin && (
+            <div>
+              <SectionTitle>Members</SectionTitle>
+              <div className="flex flex-col gap-1.5">
+                {members.map(m => (
+                  <div key={m.user_id} className="flex items-center gap-2 py-1">
+                    <span className="flex-1 text-[13px] truncate">{m.email}</span>
+                    {m.is_admin && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                        <ShieldCheck size={13} strokeWidth={2} /> Admin
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {pending.length > 0 && (
+                  <>
+                    <div className="text-[11px] font-semibold text-base-content/45 uppercase tracking-wider mt-2 mb-1">
+                      Pending approval
+                    </div>
+                    {pending.map(u => (
+                      <div key={u.id} className="flex items-center gap-2 py-1">
+                        <span className="flex-1 text-[13px] truncate text-base-content/60">{u.email}</span>
+                        <button
+                          onClick={() => handleApprove(u.id)}
+                          disabled={isPending}
+                          className="btn btn-xs btn-primary rounded-full"
+                        >
+                          {isPending ? <span className="loading loading-spinner loading-xs" /> : 'Approve'}
+                        </button>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {pending.length === 0 && members.length > 0 && (
+                  <p className="text-[12px] text-base-content/40 mt-1">No pending sign-ups.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ── Tags ──────── */}
           <div>
@@ -255,29 +348,23 @@ function ThemeCard({
   return (
     <button
       type="button"
-      data-theme={id}
       onClick={onClick}
       className={[
-        'rounded-2xl p-3 border-2 text-left transition-all overflow-hidden bg-base-100',
+        'rounded-xl overflow-hidden border-2 text-left transition-all',
         active
           ? 'border-primary ring-2 ring-primary/25'
-          : 'border-base-300 hover:border-base-content/25',
+          : 'border-base-300 hover:border-base-content/20',
       ].join(' ')}
     >
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="font-bold text-sm text-base-content">{label}</span>
-        <span className={[
-          'w-5 h-5 rounded-full flex items-center justify-center',
-          active ? 'bg-primary text-primary-content' : 'bg-base-200',
-        ].join(' ')}>
-          {active && <Check size={12} strokeWidth={2.5} />}
-        </span>
+      <div data-theme={id} className="flex h-9">
+        <span className="flex-1 bg-primary" />
+        <span className="flex-1 bg-secondary" />
+        <span className="flex-1 bg-accent" />
+        <span className="flex-1 bg-neutral" />
       </div>
-      <div className="flex gap-1.5">
-        <span className="w-7 h-7 rounded-lg bg-primary" />
-        <span className="w-7 h-7 rounded-lg bg-secondary" />
-        <span className="w-7 h-7 rounded-lg bg-accent" />
-        <span className="flex-1 h-7 rounded-lg bg-base-200 border border-base-300" />
+      <div className="bg-base-100 px-2 py-1.5 flex items-center justify-between gap-1">
+        <span className="text-[11px] font-semibold text-base-content truncate leading-tight">{label}</span>
+        {active && <Check size={11} strokeWidth={2.5} className="text-primary shrink-0" />}
       </div>
     </button>
   )

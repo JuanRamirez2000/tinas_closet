@@ -26,7 +26,7 @@ export default function DeleteConfirmModal({ item, onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ background: 'rgba(60,50,70,.28)', backdropFilter: 'blur(2px)' }}
+      style={{ background: 'rgba(60,50,70,.5)' }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="bg-base-100 rounded-3xl shadow-xl w-full max-w-sm p-6">

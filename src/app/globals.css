@@ -1,42 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=Hanken+Grotesk:wght@300..700&display=swap');
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: all;
+}
 
 /* ─── Tailwind theme extensions ──────────────────────────────── */
 @theme {
   --font-serif: "Newsreader", Georgia, serif;
   --font-sans: "Hanken Grotesk", system-ui, sans-serif;
-}
-
-/* ─── Blush custom theme ──────────────────────────────────────── */
-[data-theme="blush"] {
-  color-scheme: light;
-  --color-base-100: hsl(35, 40%, 98%);
-  --color-base-200: hsl(272, 16%, 94%);
-  --color-base-300: hsl(269, 14%, 86%);
-  --color-base-content: hsl(345, 16%, 24%);
-  --color-primary: hsl(344, 33%, 59%);
-  --color-primary-content: hsl(350, 50%, 98%);
-  --color-secondary: hsl(18, 42%, 66%);
-  --color-secondary-content: hsl(20, 40%, 20%);
-  --color-accent: hsl(145, 16%, 56%);
-  --color-accent-content: hsl(150, 28%, 16%);
-  --color-neutral: hsl(345, 18%, 26%);
-  --color-neutral-content: hsl(35, 42%, 96%);
-  --color-info: hsl(210, 40%, 70%);
-  --color-info-content: hsl(210, 40%, 20%);
-  --color-success: hsl(145, 30%, 60%);
-  --color-success-content: hsl(145, 30%, 15%);
-  --color-warning: hsl(40, 60%, 65%);
-  --color-warning-content: hsl(40, 60%, 20%);
-  --color-error: hsl(0, 50%, 60%);
-  --color-error-content: hsl(0, 50%, 98%);
-  --radius-box: 1.1rem;
-  --radius-field: 2rem;
-  --radius-selector: 0.75rem;
-  --border: 1.5px;
-  --depth: 0;
-  --noise: 0;
 }
 
 /* ─── Animations ─────────────────────────────────────────────── */

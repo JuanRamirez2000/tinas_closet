@@ -9,8 +9,8 @@ export interface Database {
         Update: { email?: string; name?: string | null; closet_name?: string | null; theme?: string }
       }
       members: {
-        Row: { user_id: string }
-        Insert: { user_id: string }
+        Row: { user_id: string; is_admin: boolean }
+        Insert: { user_id: string; is_admin?: boolean }
         Update: never
       }
       base_locations: {
