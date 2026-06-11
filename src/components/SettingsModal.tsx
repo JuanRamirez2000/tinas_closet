@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { X, Check, Plus, ShieldCheck } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { X, Check, Plus, ShieldCheck, ArrowUpRight } from 'lucide-react'
 import ColorDot from '@/components/ColorDot'
 import { saveSettings } from '@/app/actions/settings'
 import { createTag, deleteTag, createTagGroup, deleteTagGroup, getTagGroups } from '@/app/actions/tags'
@@ -66,6 +67,7 @@ export default function SettingsModal({
   initialTagGroups,
   isAdmin = false,
 }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [localName, setLocalName] = useState(closetName)
   const [tagGroups, setTagGroups] = useState(initialTagGroups)
@@ -208,6 +210,13 @@ export default function SettingsModal({
                         <ShieldCheck size={13} strokeWidth={2} /> Admin
                       </span>
                     )}
+                    <button
+                      onClick={() => { onClose(); router.push(`/${m.user_id}/items`) }}
+                      className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-base-content/50 hover:text-primary transition-colors"
+                      title="Browse closet"
+                    >
+                      Browse <ArrowUpRight size={12} strokeWidth={2} />
+                    </button>
                   </div>
                 ))}
                 {pending.length > 0 && (
