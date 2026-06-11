@@ -365,7 +365,7 @@ export default function ManageClient({
 
         {/* ── Tags tab ──────────────────────────────────────────── */}
         {activeTab === 'tags' && (
-          <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-5 lg:items-start max-w-4xl">
+          <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-5 lg:items-start">
 
             {/* Tag groups */}
             <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5">
