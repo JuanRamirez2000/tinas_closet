@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useTransition, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useIsAdmin } from '@/context/admin'
 import {
   Search, X, SlidersHorizontal, ArrowUpDown, Box,
   LayoutGrid, Plus, Heart,
@@ -27,6 +28,7 @@ interface Props {
 
 export default function WardrobeClient({ items, storageLocations, tagGroups, locationCount }: Props) {
   const router = useRouter()
+  const isAdmin = useIsAdmin()
   const [isPending, startTransition] = useTransition()
 
   const [search, setSearch] = useState('')
@@ -48,10 +50,11 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
   const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   useEffect(() => {
+    if (!isAdmin) return
     const open = () => setQuickAddOpen(true)
     window.addEventListener('quick-add:open', open)
     return () => window.removeEventListener('quick-add:open', open)
-  }, [])
+  }, [isAdmin])
 
   const typeGroup   = useMemo(() => tagGroups.find(g => g.name === 'Type'),   [tagGroups])
   const colorGroup  = useMemo(() => tagGroups.find(g => g.name === 'Color'),  [tagGroups])
@@ -164,14 +167,16 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
                   : `${items.length} pieces`}
               </p>
             </div>
-            <button
-              onClick={() => selecting ? exitSelect() : setSelecting(true)}
-              className={`btn btn-sm rounded-full ${
-                selecting ? 'btn-ghost' : 'bg-base-200 border-0 text-base-content/70'
-              }`}
-            >
-              {selecting ? 'Cancel' : 'Select'}
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => selecting ? exitSelect() : setSelecting(true)}
+                className={`btn btn-sm rounded-full ${
+                  selecting ? 'btn-ghost' : 'bg-base-200 border-0 text-base-content/70'
+                }`}
+              >
+                {selecting ? 'Cancel' : 'Select'}
+              </button>
+            )}
           </div>
 
           {/* Search */}
@@ -226,8 +231,8 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
                   selected={selected.has(item.id)}
                   onTap={handleItemTap}
                   onToggleFav={handleToggleFav}
-                  onEdit={setEditingItem}
-                  onDelete={setDeletingItem}
+                  onEdit={isAdmin ? setEditingItem : undefined}
+                  onDelete={isAdmin ? setDeletingItem : undefined}
                 />
               ))}
             </div>

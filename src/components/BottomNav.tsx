@@ -6,9 +6,10 @@ import { LayoutGrid, Layers, Settings2, Plus, Settings } from 'lucide-react'
 
 interface Props {
   onOpenSettings: () => void
+  isAdmin?: boolean
 }
 
-export default function BottomNav({ onOpenSettings }: Props) {
+export default function BottomNav({ onOpenSettings, isAdmin = false }: Props) {
   const pathname = usePathname()
 
   const isWardrobe = pathname.startsWith('/items') || pathname === '/'
@@ -44,14 +45,18 @@ export default function BottomNav({ onOpenSettings }: Props) {
           <span className="text-[10.5px] font-medium">Outfits</span>
         </Link>
 
-        {/* FAB — Quick add */}
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
-          className="shrink-0 -mt-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-primary text-primary-content"
-          aria-label="Quick add"
-        >
-          <Plus size={26} strokeWidth={2.2} />
-        </button>
+        {/* FAB — Quick add (admin only) */}
+        {isAdmin ? (
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
+            className="shrink-0 -mt-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-primary text-primary-content"
+            aria-label="Quick add"
+          >
+            <Plus size={26} strokeWidth={2.2} />
+          </button>
+        ) : (
+          <div className="shrink-0 w-14" />
+        )}
 
         <Link
           href="/manage"

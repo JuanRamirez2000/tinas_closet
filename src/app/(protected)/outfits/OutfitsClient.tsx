@@ -4,6 +4,7 @@ import { useState, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, Plus, LayoutGrid } from 'lucide-react'
 import { createOutfit } from '@/app/actions/outfits'
+import { useIsAdmin } from '@/context/admin'
 import PhotoTile from '@/components/PhotoTile'
 import type { OutfitSlot } from '@/lib/types'
 
@@ -20,6 +21,7 @@ interface Props {
 
 export default function OutfitsClient({ outfits, slots }: Props) {
   const router = useRouter()
+  const isAdmin = useIsAdmin()
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [newName, setNewName] = useState('')
@@ -56,12 +58,14 @@ export default function OutfitsClient({ outfits, slots }: Props) {
               : `${outfits.length} saved`}
           </p>
         </div>
-        <button
-          onClick={openModal}
-          className="btn btn-primary btn-sm rounded-full gap-1.5"
-        >
-          <Plus size={16} strokeWidth={2.2} /> New outfit
-        </button>
+        {isAdmin && (
+          <button
+            onClick={openModal}
+            className="btn btn-primary btn-sm rounded-full gap-1.5"
+          >
+            <Plus size={16} strokeWidth={2.2} /> New outfit
+          </button>
+        )}
       </div>
 
       {/* Search */}
@@ -83,7 +87,7 @@ export default function OutfitsClient({ outfits, slots }: Props) {
       {/* Gallery */}
       <div className="flex-1 px-4 pb-28 lg:pb-10 lg:px-6">
         {outfits.length === 0 ? (
-          <EmptyGallery onNew={openModal} />
+          <EmptyGallery onNew={isAdmin ? openModal : undefined} />
         ) : filtered.length === 0 ? (
           <NoMatches onClear={() => setSearch('')} />
         ) : (
@@ -198,7 +202,7 @@ function OutfitCard({ outfit, slots }: { outfit: OutfitPreview; slots: OutfitSlo
   )
 }
 
-function EmptyGallery({ onNew }: { onNew: () => void }) {
+function EmptyGallery({ onNew }: { onNew?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-20 px-8">
       <div className="w-16 h-16 rounded-3xl bg-base-200 flex items-center justify-center text-base-content/35 mb-4">
@@ -206,11 +210,13 @@ function EmptyGallery({ onNew }: { onNew: () => void }) {
       </div>
       <h3 className="font-serif text-xl mb-1">No outfits yet</h3>
       <p className="text-[13.5px] text-base-content/50 max-w-[230px] mb-5">
-        Create an outfit and fill the slots with pieces from your wardrobe.
+        {onNew ? 'Create an outfit and fill the slots with pieces from your wardrobe.' : 'No outfits have been created yet.'}
       </p>
-      <button onClick={onNew} className="btn btn-primary rounded-full gap-1.5">
-        <Plus size={17} strokeWidth={2.2} /> New outfit
-      </button>
+      {onNew && (
+        <button onClick={onNew} className="btn btn-primary rounded-full gap-1.5">
+          <Plus size={17} strokeWidth={2.2} /> New outfit
+        </button>
+      )}
     </div>
   )
 }

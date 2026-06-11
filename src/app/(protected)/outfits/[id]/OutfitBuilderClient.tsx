@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { setSlotItem, removeSlotItem } from '@/app/actions/outfit-slots'
 import { deleteOutfit, updateOutfit } from '@/app/actions/outfits'
+import { useIsAdmin } from '@/context/admin'
 import PhotoTile from '@/components/PhotoTile'
 import BottomSheet from '@/components/BottomSheet'
 import SectionLabel from '@/components/SectionLabel'
@@ -36,11 +37,13 @@ function itemsForSlot(slot: OutfitSlot, items: Item[]): Item[] {
 
 export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) {
   const router = useRouter()
+  const isAdmin = useIsAdmin()
   const [isPending, startTransition] = useTransition()
   const [activeSlot, setActiveSlot] = useState<OutfitSlot | null>(null)
   const [pickerQuery, setPickerQuery] = useState('')
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(outfit.name)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const slotMap = useMemo(() => {
     const map = new Map<string, Item[]>()
@@ -103,7 +106,7 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
           <ChevronLeft size={20} strokeWidth={2.1} />
         </button>
 
-        {editingName ? (
+        {editingName && isAdmin ? (
           <form
             className="flex gap-2 flex-1"
             onSubmit={e => {
@@ -127,27 +130,31 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
           </form>
         ) : (
           <>
-            <h1 className="font-serif text-[20px] flex-1 cursor-pointer truncate" onClick={() => setEditingName(true)}>
+            <h1
+              className={`font-serif text-[20px] flex-1 truncate ${isAdmin ? 'cursor-pointer' : ''}`}
+              onClick={() => { if (isAdmin) setEditingName(true) }}
+            >
               {outfit.name}
             </h1>
-            <button
-              className="btn btn-sm btn-ghost rounded-full gap-1.5 text-base-content/60 shrink-0"
-              onClick={handleSurpriseMe}
-              disabled={isPending}
-              title="Randomly fill all slots"
-            >
-              <Shuffle size={16} strokeWidth={1.8} /> Surprise me
-            </button>
-            <button
-              className="btn btn-circle btn-ghost btn-sm text-error shrink-0"
-              onClick={() => {
-                if (!confirm(`Delete "${outfit.name}"?`)) return
-                startTransition(async () => { await deleteOutfit(outfit.id); router.push('/outfits') })
-              }}
-              disabled={isPending}
-            >
-              <Trash2 size={15} strokeWidth={1.8} />
-            </button>
+            {isAdmin && (
+              <>
+                <button
+                  className="btn btn-sm btn-ghost rounded-full gap-1.5 text-base-content/60 shrink-0"
+                  onClick={handleSurpriseMe}
+                  disabled={isPending}
+                  title="Randomly fill all slots"
+                >
+                  <Shuffle size={16} strokeWidth={1.8} /> Surprise me
+                </button>
+                <button
+                  className="btn btn-circle btn-ghost btn-sm text-error shrink-0"
+                  onClick={() => setDeleteOpen(true)}
+                  disabled={isPending}
+                >
+                  <Trash2 size={15} strokeWidth={1.8} />
+                </button>
+              </>
+            )}
           </>
         )}
       </div>
@@ -168,8 +175,10 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
             return (
               <div
                 key={slot.id}
-                onClick={() => { setActiveSlot(slot); setPickerQuery('') }}
-                className={`cursor-pointer bg-base-100 border-2 rounded-2xl p-3 flex items-center gap-3 transition-colors ${
+                onClick={() => { if (isAdmin) { setActiveSlot(slot); setPickerQuery('') } }}
+                className={`bg-base-100 border-2 rounded-2xl p-3 flex items-center gap-3 transition-colors ${
+                  isAdmin ? 'cursor-pointer' : ''
+                } ${
                   activeSlot?.id === slot.id ? 'border-primary' : 'border-base-200 hover:border-base-300'
                 }`}
               >
@@ -192,16 +201,18 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
                         <div className="w-12 h-14.5">
                           <PhotoTile imageUrl={item.image_url} name={item.name} className="w-full h-full" radius="0.55rem" />
                         </div>
-                        <button
-                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-neutral text-neutral-content flex items-center justify-center shadow"
-                          onClick={e => { e.stopPropagation(); startTransition(() => removeSlotItem(outfit.id, slot.id, item.id)) }}
-                        >
-                          <X size={12} strokeWidth={2.1} />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-neutral text-neutral-content flex items-center justify-center shadow"
+                            onClick={e => { e.stopPropagation(); startTransition(() => removeSlotItem(outfit.id, slot.id, item.id)) }}
+                          >
+                            <X size={12} strokeWidth={2.1} />
+                          </button>
+                        )}
                         <p className="text-[10px] text-center mt-0.5 max-w-12 truncate text-base-content/40">{item.name}</p>
                       </div>
                     ))}
-                    {slot.allow_multiple && (
+                    {isAdmin && slot.allow_multiple && (
                       <div className="w-12 h-14.5 rounded-xl bg-base-200 flex items-center justify-center text-base-content/30">
                         <Plus size={20} strokeWidth={2.2} />
                       </div>
@@ -302,10 +313,10 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
             </div>
           </div>
 
-          {/* Right: per-slot horizontal item pickers */}
+          {/* Right: per-slot horizontal item pickers (admin) or read-only slot view */}
           <div className="flex flex-col gap-7">
             {slots.map(slot => {
-              const slotPool = itemsForSlot(slot, allItems)
+              const slotPool = isAdmin ? itemsForSlot(slot, allItems) : []
               const slotItems = slotMap.get(slot.id) ?? []
               return (
                 <div key={slot.id}>
@@ -315,42 +326,59 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
                       <span className="font-normal normal-case text-base-content/30 ml-2">· multiple</span>
                     )}
                   </div>
-                  <div className="flex gap-3 overflow-x-auto pb-2 no-sb -mx-1 px-1">
-                    {slotPool.map(item => {
-                      const isSelected = slotItems.some(i => i.id === item.id)
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => handleDesktopPick(slot, item)}
-                          disabled={isPending}
-                          className={`shrink-0 w-22 text-left transition-transform disabled:pointer-events-none ${
-                            isSelected ? 'scale-[1.03]' : 'hover:scale-[1.02]'
-                          }`}
-                        >
-                          <div className={`rounded-2xl p-0.5 transition-all ${
-                            isSelected ? 'ring-2 ring-primary bg-primary/10' : ''
-                          }`}>
+                  {isAdmin ? (
+                    <div className="flex gap-3 overflow-x-auto pb-2 no-sb -mx-1 px-1">
+                      {slotPool.map(item => {
+                        const isSelected = slotItems.some(i => i.id === item.id)
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => handleDesktopPick(slot, item)}
+                            disabled={isPending}
+                            className={`shrink-0 w-22 text-left transition-transform disabled:pointer-events-none ${
+                              isSelected ? 'scale-[1.03]' : 'hover:scale-[1.02]'
+                            }`}
+                          >
+                            <div className={`rounded-2xl p-0.5 transition-all ${
+                              isSelected ? 'ring-2 ring-primary bg-primary/10' : ''
+                            }`}>
+                              <div className="relative w-full aspect-square rounded-xl overflow-hidden">
+                                <PhotoTile
+                                  imageUrl={item.image_url}
+                                  name={item.name}
+                                  className="w-full h-full"
+                                  radius="0.6rem"
+                                />
+                              </div>
+                            </div>
+                            <div className={`text-[11px] font-medium truncate px-0.5 mt-1 ${
+                              isSelected ? 'text-primary' : 'text-base-content/55'
+                            }`}>
+                              {item.name}
+                            </div>
+                          </button>
+                        )
+                      })}
+                      {slotPool.length === 0 && (
+                        <p className="text-[13px] text-base-content/30 py-4">No items</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex gap-3 overflow-x-auto pb-2 no-sb -mx-1 px-1">
+                      {slotItems.length === 0 ? (
+                        <p className="text-[13px] text-base-content/30 py-4">—</p>
+                      ) : slotItems.map(item => (
+                        <div key={item.id} className="shrink-0 w-22">
+                          <div className="rounded-2xl p-0.5 ring-2 ring-primary bg-primary/10">
                             <div className="relative w-full aspect-square rounded-xl overflow-hidden">
-                              <PhotoTile
-                                imageUrl={item.image_url}
-                                name={item.name}
-                                className="w-full h-full"
-                                radius="0.6rem"
-                              />
+                              <PhotoTile imageUrl={item.image_url} name={item.name} className="w-full h-full" radius="0.6rem" />
                             </div>
                           </div>
-                          <div className={`text-[11px] font-medium truncate px-0.5 mt-1 ${
-                            isSelected ? 'text-primary' : 'text-base-content/55'
-                          }`}>
-                            {item.name}
-                          </div>
-                        </button>
-                      )
-                    })}
-                    {slotPool.length === 0 && (
-                      <p className="text-[13px] text-base-content/30 py-4">No items</p>
-                    )}
-                  </div>
+                          <div className="text-[11px] font-medium truncate px-0.5 mt-1 text-primary">{item.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -378,6 +406,35 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
           </div>
         </div>
       </div>
+
+      {/* Delete confirm modal */}
+      {deleteOpen && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4"
+          style={{ background: 'rgba(60,50,70,.5)' }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setDeleteOpen(false) }}
+        >
+          <div className="bg-base-100 rounded-3xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
+            <h2 className="text-lg font-bold">Delete outfit?</h2>
+            <p className="text-[14px] text-base-content/60">
+              &ldquo;{outfit.name}&rdquo; will be permanently deleted.
+            </p>
+            <div className="flex justify-end gap-2 mt-1">
+              <button onClick={() => setDeleteOpen(false)} className="btn btn-ghost rounded-full">Cancel</button>
+              <button
+                disabled={isPending}
+                onClick={() => {
+                  setDeleteOpen(false)
+                  startTransition(async () => { await deleteOutfit(outfit.id); router.push('/outfits') })
+                }}
+                className="btn btn-error rounded-full gap-1.5"
+              >
+                {isPending ? <span className="loading loading-spinner loading-sm" /> : <><Trash2 size={15} strokeWidth={1.8} /> Delete</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile item picker sheet */}
       <BottomSheet
