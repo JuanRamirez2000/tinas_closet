@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search, X, Plus, LayoutGrid } from 'lucide-react'
 import { createOutfit } from '@/app/actions/outfits'
 import { useIsAdmin } from '@/context/admin'
+import { useViewingUserId } from '@/context/user'
 import PhotoTile from '@/components/PhotoTile'
 import type { OutfitSlot } from '@/lib/types'
 
@@ -22,6 +23,7 @@ interface Props {
 export default function OutfitsClient({ outfits, slots }: Props) {
   const router = useRouter()
   const isAdmin = useIsAdmin()
+  const viewingUserId = useViewingUserId()
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [newName, setNewName] = useState('')
@@ -41,7 +43,7 @@ export default function OutfitsClient({ outfits, slots }: Props) {
     startTransition(async () => {
       const id = await createOutfit(newName.trim())
       closeModal()
-      router.push(`/outfits/${id}`)
+      router.push(`/${viewingUserId}/outfits/${id}`)
     })
   }
 
@@ -93,7 +95,7 @@ export default function OutfitsClient({ outfits, slots }: Props) {
         ) : (
           <div className="grid gap-4 pt-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
             {filtered.map(outfit => (
-              <OutfitCard key={outfit.id} outfit={outfit} slots={slots} />
+              <OutfitCard key={outfit.id} outfit={outfit} slots={slots} viewingUserId={viewingUserId} />
             ))}
           </div>
         )}
@@ -152,7 +154,7 @@ export default function OutfitsClient({ outfits, slots }: Props) {
   )
 }
 
-function OutfitCard({ outfit, slots }: { outfit: OutfitPreview; slots: OutfitSlot[] }) {
+function OutfitCard({ outfit, slots, viewingUserId }: { outfit: OutfitPreview; slots: OutfitSlot[]; viewingUserId: string }) {
   const router = useRouter()
   const visibleSlots = slots.slice(0, 4)
   const slotThumbs = visibleSlots.map(slot => ({
@@ -163,7 +165,7 @@ function OutfitCard({ outfit, slots }: { outfit: OutfitPreview; slots: OutfitSlo
 
   return (
     <button
-      onClick={() => router.push(`/outfits/${outfit.id}`)}
+      onClick={() => router.push(`/${viewingUserId}/outfits/${outfit.id}`)}
       className="bg-base-100 border border-base-200 rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-sm transition-all text-left group"
     >
       {/* Thumbnail grid */}

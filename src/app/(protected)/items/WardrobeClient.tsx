@@ -3,6 +3,7 @@
 import { useState, useMemo, useTransition, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useIsAdmin } from '@/context/admin'
+import { useViewingClosetName } from '@/context/user'
 import {
   Search, X, SlidersHorizontal, ArrowUpDown, Box,
   LayoutGrid, Plus, Heart,
@@ -29,6 +30,7 @@ interface Props {
 export default function WardrobeClient({ items, storageLocations, tagGroups, locationCount }: Props) {
   const router = useRouter()
   const isAdmin = useIsAdmin()
+  const viewingClosetName = useViewingClosetName()
   const [isPending, startTransition] = useTransition()
 
   const [search, setSearch] = useState('')
@@ -156,7 +158,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
           <div className="flex items-end justify-between">
             <div>
               <h1 className="font-serif text-[26px] leading-none tracking-tight whitespace-nowrap lg:hidden">
-                Tina&apos;s Closet
+                {viewingClosetName || "Tina's Closet"}
               </h1>
               <p className="text-[12px] text-base-content/45 mt-1 lg:hidden">
                 {items.length} pieces · {locationCount} spots
@@ -219,7 +221,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
         {/* Grid */}
         <div className="flex-1 px-4 pb-28 lg:pb-10 lg:px-6">
           {filtered.length === 0 ? (
-            <EmptyGrid hasItems={items.length > 0} onClear={clearFilters} />
+            <EmptyGrid hasItems={items.length > 0} onClear={clearFilters} isAdmin={isAdmin} />
           ) : (
             <div className="grid gap-3 pt-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
               {filtered.map(item => (
@@ -411,8 +413,7 @@ function FilterBody({
 }
 
 // ── Empty grid ─────────────────────────────────────────────────────────────
-function EmptyGrid({ hasItems, onClear }: { hasItems: boolean; onClear: () => void }) {
-  const router = useRouter()
+function EmptyGrid({ hasItems, onClear, isAdmin }: { hasItems: boolean; onClear: () => void; isAdmin: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-20 px-8">
       <div className="w-16 h-16 rounded-3xl bg-base-200 flex items-center justify-center text-base-content/35 mb-4">
@@ -424,15 +425,18 @@ function EmptyGrid({ hasItems, onClear }: { hasItems: boolean; onClear: () => vo
       <p className="text-[13.5px] text-base-content/50 max-w-[230px] mb-5">
         {hasItems
           ? 'Nothing fits those filters yet. Try loosening them.'
-          : 'Add your first piece — it takes just a few taps.'}
+          : isAdmin ? 'Add your first piece — it takes just a few taps.' : 'Nothing has been added yet.'}
       </p>
       {hasItems ? (
         <button onClick={onClear} className="btn btn-sm btn-ghost rounded-full">Clear filters</button>
-      ) : (
-        <button onClick={() => router.push('/quick-add')} className="btn btn-primary rounded-full gap-1.5">
+      ) : isAdmin ? (
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
+          className="btn btn-primary rounded-full gap-1.5"
+        >
           <Plus size={17} strokeWidth={2.2} /> Add a piece
         </button>
-      )}
+      ) : null}
     </div>
   )
 }

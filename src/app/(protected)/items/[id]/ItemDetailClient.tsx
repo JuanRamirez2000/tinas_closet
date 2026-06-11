@@ -7,6 +7,8 @@ import {
   MapPin, ChevronDown, Box, Check,
 } from 'lucide-react'
 import { updateItem, deleteItem, toggleFavorite } from '@/app/actions/items'
+import { useIsAdmin } from '@/context/admin'
+import { useViewingUserId } from '@/context/user'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import Chip from '@/components/Chip'
 import PhotoTile from '@/components/PhotoTile'
@@ -23,6 +25,8 @@ interface Props {
 
 export default function ItemDetailClient({ item, bases, storageLocations, tagGroups }: Props) {
   const router = useRouter()
+  const isAdmin = useIsAdmin()
+  const viewingUserId = useViewingUserId()
   const [isPending, startTransition] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
   const { upload, isUploading } = usePhotoUpload()
@@ -87,7 +91,7 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
     if (!confirm(`Delete "${item.name}"?`)) return
     startTransition(async () => {
       await deleteItem(item.id)
-      router.push('/items')
+      router.push(`/${viewingUserId}/items`)
     })
   }
 
@@ -123,13 +127,15 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
           >
             <Heart size={18} strokeWidth={1.8} fill={favorite ? 'currentColor' : 'none'} />
           </button>
-          <button
-            onClick={handleDelete}
-            disabled={isPending}
-            className="w-9 h-9 rounded-full bg-base-100/85 backdrop-blur-sm flex items-center justify-center shadow-sm text-base-content/70"
-          >
-            <Trash2 size={17} strokeWidth={1.8} />
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className="w-9 h-9 rounded-full bg-base-100/85 backdrop-blur-sm flex items-center justify-center shadow-sm text-base-content/70"
+            >
+              <Trash2 size={17} strokeWidth={1.8} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -276,18 +282,20 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
       </div>
 
       {/* Save bar */}
-      <div className="fixed left-0 right-0 bottom-0 px-4 pb-24 pt-3 bg-gradient-to-t from-base-100 via-base-100 to-transparent z-10 pointer-events-none">
-        <button
-          onClick={handleSave}
-          disabled={!dirty || isPending}
-          className="btn btn-primary w-full rounded-2xl h-[50px] text-[15px] disabled:opacity-40 pointer-events-auto"
-        >
-          {isPending
-            ? <span className="loading loading-spinner loading-sm" />
-            : dirty ? 'Save changes' : 'Saved'
-          }
-        </button>
-      </div>
+      {isAdmin && (
+        <div className="fixed left-0 right-0 bottom-0 px-4 pb-24 pt-3 bg-gradient-to-t from-base-100 via-base-100 to-transparent z-10 pointer-events-none">
+          <button
+            onClick={handleSave}
+            disabled={!dirty || isPending}
+            className="btn btn-primary w-full rounded-2xl h-[50px] text-[15px] disabled:opacity-40 pointer-events-auto"
+          >
+            {isPending
+              ? <span className="loading loading-spinner loading-sm" />
+              : dirty ? 'Save changes' : 'Saved'
+            }
+          </button>
+        </div>
+      )}
 
       {/* Location sheet */}
       <BottomSheet open={locSheetOpen} onClose={() => setLocSheetOpen(false)} title="Where it lives">

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutGrid, Layers, Settings2, Plus, Settings } from 'lucide-react'
+import { useLoggedInUserId } from '@/context/user'
 
 interface Props {
   onOpenSettings: () => void
@@ -11,10 +12,11 @@ interface Props {
 
 export default function BottomNav({ onOpenSettings, isAdmin = false }: Props) {
   const pathname = usePathname()
+  const loggedInUserId = useLoggedInUserId()
 
-  const isWardrobe = pathname.startsWith('/items') || pathname === '/'
-  const isOutfits  = pathname.startsWith('/outfits')
-  const isManage   = pathname.startsWith('/manage')
+  const isWardrobe = pathname.includes('/items')
+  const isOutfits  = pathname.includes('/outfits')
+  const isManage   = pathname.includes('/manage')
 
   const active   = 'text-primary'
   const inactive = 'text-base-content/45'
@@ -30,7 +32,7 @@ export default function BottomNav({ onOpenSettings, isAdmin = false }: Props) {
         }}
       >
         <Link
-          href="/items"
+          href={`/${loggedInUserId}/items`}
           className={`flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${isWardrobe ? active : inactive}`}
         >
           <LayoutGrid size={22} strokeWidth={1.9} />
@@ -38,7 +40,7 @@ export default function BottomNav({ onOpenSettings, isAdmin = false }: Props) {
         </Link>
 
         <Link
-          href="/outfits"
+          href={`/${loggedInUserId}/outfits`}
           className={`flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${isOutfits ? active : inactive}`}
         >
           <Layers size={22} strokeWidth={1.9} />
@@ -59,7 +61,7 @@ export default function BottomNav({ onOpenSettings, isAdmin = false }: Props) {
         )}
 
         <Link
-          href="/manage"
+          href={`/${loggedInUserId}/manage`}
           className={`flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${isManage ? active : inactive}`}
         >
           <Settings2 size={22} strokeWidth={1.9} />

@@ -5,6 +5,7 @@ import SideNav from '@/components/SideNav'
 import BottomNav from '@/components/BottomNav'
 import SettingsModal from '@/components/SettingsModal'
 import { IsAdminContext } from '@/context/admin'
+import { UserProvider } from '@/context/user'
 import type { TagGroup } from '@/lib/types'
 
 interface Props {
@@ -13,6 +14,9 @@ interface Props {
   initialTheme: string
   initialTagGroups: TagGroup[]
   isAdmin?: boolean
+  loggedInUserId: string
+  viewingUserId: string
+  viewingClosetName: string
 }
 
 export default function SettingsShell({
@@ -21,6 +25,9 @@ export default function SettingsShell({
   initialTheme,
   initialTagGroups,
   isAdmin = false,
+  loggedInUserId,
+  viewingUserId,
+  viewingClosetName,
 }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [closetName, setClosetName] = useState(initialClosetName)
@@ -29,6 +36,7 @@ export default function SettingsShell({
   const displayName = closetName.trim() || "Tina's Closet"
 
   return (
+    <UserProvider value={{ loggedInUserId, viewingUserId, viewingClosetName }}>
     <IsAdminContext.Provider value={isAdmin}>
     <div
       className="min-h-screen flex flex-col bg-base-200"
@@ -37,6 +45,7 @@ export default function SettingsShell({
       <SideNav
         closetName={displayName}
         onOpenSettings={() => setSettingsOpen(true)}
+        isAdmin={isAdmin}
       />
       <main className="flex-1 min-w-0">
         {children}
@@ -54,5 +63,6 @@ export default function SettingsShell({
       />
     </div>
     </IsAdminContext.Provider>
+    </UserProvider>
   )
 }

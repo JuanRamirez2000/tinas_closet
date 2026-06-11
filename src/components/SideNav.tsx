@@ -3,17 +3,21 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutGrid, Layers, Settings2, Plus, Settings } from 'lucide-react'
+import { useLoggedInUserId } from '@/context/user'
 
 interface Props {
   closetName: string
   onOpenSettings: () => void
+  isAdmin?: boolean
 }
 
-export default function SideNav({ closetName, onOpenSettings }: Props) {
+export default function SideNav({ closetName, onOpenSettings, isAdmin = false }: Props) {
   const pathname = usePathname()
-  const isWardrobe = pathname.startsWith('/items') || pathname === '/'
-  const isOutfits  = pathname.startsWith('/outfits')
-  const isManage   = pathname.startsWith('/manage')
+  const loggedInUserId = useLoggedInUserId()
+
+  const isWardrobe = pathname.includes('/items')
+  const isOutfits  = pathname.includes('/outfits')
+  const isManage   = pathname.includes('/manage')
 
   return (
     <nav
@@ -23,25 +27,27 @@ export default function SideNav({ closetName, onOpenSettings }: Props) {
       <span className="font-serif text-[20px] leading-none mr-5 whitespace-nowrap">{closetName}</span>
 
       <div className="flex items-center gap-0.5 flex-1">
-        <NavLink href="/items" active={isWardrobe} icon={<LayoutGrid size={17} strokeWidth={1.9} />}>
+        <NavLink href={`/${loggedInUserId}/items`} active={isWardrobe} icon={<LayoutGrid size={17} strokeWidth={1.9} />}>
           Wardrobe
         </NavLink>
-        <NavLink href="/outfits" active={isOutfits} icon={<Layers size={17} strokeWidth={1.9} />}>
+        <NavLink href={`/${loggedInUserId}/outfits`} active={isOutfits} icon={<Layers size={17} strokeWidth={1.9} />}>
           Outfits
         </NavLink>
-        <NavLink href="/manage" active={isManage} icon={<Settings2 size={17} strokeWidth={1.9} />}>
+        <NavLink href={`/${loggedInUserId}/manage`} active={isManage} icon={<Settings2 size={17} strokeWidth={1.9} />}>
           Manage
         </NavLink>
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
-          className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary text-primary-content text-[13.5px] font-medium transition-opacity hover:opacity-90"
-        >
-          <Plus size={16} strokeWidth={2.2} />
-          Add piece
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
+            className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary text-primary-content text-[13.5px] font-medium transition-opacity hover:opacity-90"
+          >
+            <Plus size={16} strokeWidth={2.2} />
+            Add piece
+          </button>
+        )}
 
         <button
           onClick={onOpenSettings}

@@ -8,6 +8,7 @@ import {
 import { setSlotItem, removeSlotItem } from '@/app/actions/outfit-slots'
 import { deleteOutfit, updateOutfit } from '@/app/actions/outfits'
 import { useIsAdmin } from '@/context/admin'
+import { useViewingUserId } from '@/context/user'
 import PhotoTile from '@/components/PhotoTile'
 import BottomSheet from '@/components/BottomSheet'
 import SectionLabel from '@/components/SectionLabel'
@@ -38,6 +39,7 @@ function itemsForSlot(slot: OutfitSlot, items: Item[]): Item[] {
 export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) {
   const router = useRouter()
   const isAdmin = useIsAdmin()
+  const viewingUserId = useViewingUserId()
   const [isPending, startTransition] = useTransition()
   const [activeSlot, setActiveSlot] = useState<OutfitSlot | null>(null)
   const [pickerQuery, setPickerQuery] = useState('')
@@ -425,7 +427,7 @@ export default function OutfitBuilderClient({ outfit, slots, allItems }: Props) 
                 disabled={isPending}
                 onClick={() => {
                   setDeleteOpen(false)
-                  startTransition(async () => { await deleteOutfit(outfit.id); router.push('/outfits') })
+                  startTransition(async () => { await deleteOutfit(outfit.id); router.push(`/${viewingUserId}/outfits`) })
                 }}
                 className="btn btn-error rounded-full gap-1.5"
               >

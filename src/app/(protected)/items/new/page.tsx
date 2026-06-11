@@ -1,5 +1,8 @@
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export default function NewItemRedirect() {
-  redirect('/quick-add')
+export default async function NewItemRedirect() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  redirect(`/${user!.id}/items`)
 }
