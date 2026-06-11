@@ -2,16 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid, Layers, Settings2, Plus, Settings } from 'lucide-react'
+import { LayoutGrid, Layers, Settings2, Plus } from 'lucide-react'
 import { useLoggedInUserId } from '@/context/user'
 
 interface Props {
   closetName: string
-  onOpenSettings: () => void
   isAdmin?: boolean
 }
 
-export default function SideNav({ closetName, onOpenSettings, isAdmin = false }: Props) {
+export default function SideNav({ closetName, isAdmin = false }: Props) {
   const pathname = usePathname()
   const loggedInUserId = useLoggedInUserId()
 
@@ -38,25 +37,15 @@ export default function SideNav({ closetName, onOpenSettings, isAdmin = false }:
         </NavLink>
       </div>
 
-      <div className="flex items-center gap-2">
-        {isAdmin && (
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary text-primary-content text-[13.5px] font-medium transition-opacity hover:opacity-90"
-          >
-            <Plus size={16} strokeWidth={2.2} />
-            Add piece
-          </button>
-        )}
-
+      {isAdmin && (
         <button
-          onClick={onOpenSettings}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-base-content/55 hover:text-base-content hover:bg-base-200 transition-colors"
-          title="Settings"
+          onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
+          className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary text-primary-content text-[13.5px] font-medium transition-opacity hover:opacity-90"
         >
-          <Settings size={18} strokeWidth={1.8} />
+          <Plus size={16} strokeWidth={2.2} />
+          Add piece
         </button>
-      </div>
+      )}
     </nav>
   )
 }

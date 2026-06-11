@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import SettingsShell from '@/components/SettingsShell'
-import type { TagGroup } from '@/lib/types'
 
 interface Props {
   children: React.ReactNode
@@ -20,12 +19,10 @@ export default async function UserClosetLayout({ children, params }: Props) {
   const [
     { data: loggedInMember },
     { data: loggedInProfile },
-    { data: rawTagGroups },
     viewingProfileResult,
   ] = await Promise.all([
     supabase.from('members').select('user_id, is_admin').eq('user_id', user.id).maybeSingle(),
     supabase.from('profiles').select('closet_name, theme').eq('id', user.id).single(),
-    supabase.from('tag_groups').select('*, tags(*)').order('name'),
     isOwnCloset
       ? Promise.resolve({ data: null })
       : supabase.from('profiles').select('closet_name').eq('id', userId).single(),
@@ -47,10 +44,8 @@ export default async function UserClosetLayout({ children, params }: Props) {
 
   return (
     <SettingsShell
-      // Settings always manage the logged-in user's own profile
       initialClosetName={loggedInProfile?.closet_name ?? ''}
       initialTheme={loggedInProfile?.theme ?? 'cupcake'}
-      initialTagGroups={(rawTagGroups as TagGroup[]) ?? []}
       isAdmin={loggedInMember.is_admin ?? false}
       loggedInUserId={user.id}
       viewingUserId={userId}

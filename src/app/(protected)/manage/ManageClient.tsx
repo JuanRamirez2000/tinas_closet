@@ -1,23 +1,29 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
-  Box, Pencil, Plus, X, Trash2,
+  Box, Pencil, Plus, X, Trash2, Check,
   Layers, ToggleLeft, ToggleRight,
+  Settings, MapPin, Tag as TagIcon, Users, ShieldCheck, ArrowUpRight,
 } from 'lucide-react'
 import Chip from '@/components/Chip'
 import BottomSheet from '@/components/BottomSheet'
 import ColorDot from '@/components/ColorDot'
 import SectionLabel from '@/components/SectionLabel'
 import {
-  createBaseLocation, updateBaseLocation, deleteBaseLocation,
+  createBaseLocation, deleteBaseLocation,
   createStorageLocation, updateStorageLocation, deleteStorageLocation,
 } from '@/app/actions/locations'
 import { createTagGroup, deleteTagGroup, createTag, deleteTag } from '@/app/actions/tags'
-import {
-  createOutfitSlot, updateOutfitSlot, deleteOutfitSlot,
-} from '@/app/actions/outfit-slots'
+import { createOutfitSlot, updateOutfitSlot, deleteOutfitSlot } from '@/app/actions/outfit-slots'
+import { saveSettings } from '@/app/actions/settings'
+import { approveMember } from '@/app/actions/admin'
+import { useShellSettings } from '@/context/shell'
 import type { BaseLocation, OutfitSlot, StorageLocation, TagGroup } from '@/lib/types'
+
+type MemberInfo = { user_id: string; email: string; is_admin: boolean }
+type PendingUser = { id: string; email: string }
 
 interface Props {
   bases: BaseLocation[]
@@ -25,33 +31,108 @@ interface Props {
   tagGroups: TagGroup[]
   locationCounts: Record<string, number>
   outfitSlots: OutfitSlot[]
+  isAdmin: boolean
+  members: MemberInfo[]
+  pending: PendingUser[]
 }
+
+type TabId = 'settings' | 'locations' | 'tags' | 'members'
+
+const THEMES = [
+  { id: 'light',        label: 'Light'        },
+  { id: 'dark',         label: 'Dark'         },
+  { id: 'cupcake',      label: 'Cupcake'      },
+  { id: 'bumblebee',    label: 'Bumblebee'    },
+  { id: 'emerald',      label: 'Emerald'      },
+  { id: 'corporate',    label: 'Corporate'    },
+  { id: 'synthwave',    label: 'Synthwave'    },
+  { id: 'retro',        label: 'Retro'        },
+  { id: 'cyberpunk',    label: 'Cyberpunk'    },
+  { id: 'valentine',    label: 'Valentine'    },
+  { id: 'halloween',    label: 'Halloween'    },
+  { id: 'garden',       label: 'Garden'       },
+  { id: 'forest',       label: 'Forest'       },
+  { id: 'aqua',         label: 'Aqua'         },
+  { id: 'lofi',         label: 'Lo-Fi'        },
+  { id: 'pastel',       label: 'Pastel'       },
+  { id: 'fantasy',      label: 'Fantasy'      },
+  { id: 'wireframe',    label: 'Wireframe'    },
+  { id: 'black',        label: 'Black'        },
+  { id: 'luxury',       label: 'Luxury'       },
+  { id: 'dracula',      label: 'Dracula'      },
+  { id: 'cmyk',         label: 'CMYK'         },
+  { id: 'autumn',       label: 'Autumn'       },
+  { id: 'business',     label: 'Business'     },
+  { id: 'acid',         label: 'Acid'         },
+  { id: 'lemonade',     label: 'Lemonade'     },
+  { id: 'night',        label: 'Night'        },
+  { id: 'coffee',       label: 'Coffee'       },
+  { id: 'winter',       label: 'Winter'       },
+  { id: 'dim',          label: 'Dim'          },
+  { id: 'nord',         label: 'Nord'         },
+  { id: 'sunset',       label: 'Sunset'       },
+  { id: 'caramellatte', label: 'Caramellatte' },
+  { id: 'abyss',        label: 'Abyss'        },
+  { id: 'silk',         label: 'Silk'         },
+]
 
 interface EditingLoc { id?: string; name: string; baseId: string }
 
-export default function ManageClient({ bases, storageLocations, tagGroups, locationCounts, outfitSlots }: Props) {
+export default function ManageClient({
+  bases,
+  storageLocations,
+  tagGroups,
+  locationCounts,
+  outfitSlots,
+  isAdmin,
+  members,
+  pending,
+}: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const { theme, setTheme, closetName, setClosetName } = useShellSettings()
 
-  // Storage spots
+  const [activeTab, setActiveTab] = useState<TabId>('settings')
+
+  // Settings tab state
+  const [localClosetName, setLocalClosetName] = useState(closetName)
+
+  // Storage state
   const [editingLoc, setEditingLoc] = useState<EditingLoc | null>(null)
   const [locName, setLocName] = useState('')
   const [locBaseId, setLocBaseId] = useState('')
 
-  // Groups (bases)
+  // Groups state
   const [newBaseName, setNewBaseName] = useState('')
   const [addBaseOpen, setAddBaseOpen] = useState(false)
 
-  // Tags
+  // Tags state
   const [newTagValues, setNewTagValues] = useState<Record<string, string>>({})
   const [newGroupName, setNewGroupName] = useState('')
 
-  // Outfit slots
+  // Outfit slots state
   const [editingSlot, setEditingSlot] = useState<OutfitSlot | null>(null)
   const [slotName, setSlotName] = useState('')
   const [slotMultiple, setSlotMultiple] = useState(false)
   const [slotOrder, setSlotOrder] = useState(0)
   const [newSlotName, setNewSlotName] = useState('')
   const [newSlotMultiple, setNewSlotMultiple] = useState(false)
+
+  // ── Settings handlers ────────────────────────────────────────
+
+  function saveClosetName() {
+    const trimmed = localClosetName.trim()
+    if (trimmed === closetName) return
+    setClosetName(trimmed)
+    startTransition(() => saveSettings({ closet_name: trimmed }))
+  }
+
+  function handleThemeChange(t: string) {
+    setTheme(t)
+    startTransition(() => saveSettings({ theme: t }))
+  }
+
+  // ── Location handlers ────────────────────────────────────────
 
   function openNewLoc() {
     setEditingLoc({ name: '', baseId: bases[0]?.id ?? '' })
@@ -86,6 +167,8 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
     })
   }
 
+  // ── Tag handlers ─────────────────────────────────────────────
+
   function handleAddTag(groupId: string, value: string) {
     if (!value.trim()) return
     startTransition(async () => {
@@ -93,6 +176,8 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
       setNewTagValues(v => ({ ...v, [groupId]: '' }))
     })
   }
+
+  // ── Slot handlers ─────────────────────────────────────────────
 
   function openEditSlot(slot: OutfitSlot) {
     setEditingSlot(slot)
@@ -119,21 +204,92 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
     })
   }
 
+  // ── Member handlers ───────────────────────────────────────────
+
+  function handleApprove(userId: string) {
+    startTransition(async () => {
+      await approveMember(userId)
+      router.refresh()
+    })
+  }
+
+  // ── Tab definitions ───────────────────────────────────────────
+
+  const TABS: { id: TabId; label: string; Icon: React.ElementType }[] = [
+    { id: 'settings',  label: 'Settings',  Icon: Settings  },
+    { id: 'locations', label: 'Locations', Icon: MapPin    },
+    { id: 'tags',      label: 'Tags',      Icon: TagIcon   },
+    ...(isAdmin ? [{ id: 'members' as TabId, label: 'Members', Icon: Users }] : []),
+  ]
+
   return (
     <div className="flex flex-col min-h-screen">
 
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="px-4 lg:px-6 pt-3 lg:pt-6 pb-2 lg:pb-4 shrink-0">
-        <h1 className="font-serif text-[26px] leading-none">Closets &amp; Tags</h1>
-        <p className="text-[12px] text-base-content/45 mt-1">Where things live, and how you label them</p>
+      {/* Header */}
+      <div className="px-4 lg:px-6 pt-3 lg:pt-6 pb-0 shrink-0">
+        <h1 className="font-serif text-[26px] leading-none">Manage</h1>
       </div>
 
-      {/* ── Content ────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-6 pb-24 lg:pb-10">
-        <div className="lg:grid lg:grid-cols-[360px_1fr] lg:gap-5 lg:items-start">
+      {/* Tab bar */}
+      <div className="flex px-4 lg:px-6 mt-3 border-b border-base-200 overflow-x-auto shrink-0">
+        {TABS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-[13.5px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ${
+              activeTab === id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-base-content/50 hover:text-base-content/75'
+            }`}
+          >
+            <Icon size={14} strokeWidth={2} />
+            {label}
+          </button>
+        ))}
+      </div>
 
-          {/* ══ LEFT COLUMN ══════════════════════════════════════ */}
-          <div className="lg:flex lg:flex-col lg:gap-4">
+      {/* Tab content */}
+      <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-5 pb-28 lg:pb-10">
+
+        {/* ── Settings tab ─────────────────────────────────────── */}
+        {activeTab === 'settings' && (
+          <div className="max-w-2xl space-y-8">
+
+            <div>
+              <SectionLabel>Closet name</SectionLabel>
+              <div className="mt-2">
+                <input
+                  value={localClosetName}
+                  onChange={e => setLocalClosetName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveClosetName() }}
+                  onBlur={saveClosetName}
+                  placeholder="Tina's Closet"
+                  className="input input-bordered w-full rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div>
+              <SectionLabel>Theme</SectionLabel>
+              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 mt-2">
+                {THEMES.map(t => (
+                  <ThemeCard
+                    key={t.id}
+                    id={t.id}
+                    label={t.label}
+                    active={theme === t.id}
+                    onClick={() => handleThemeChange(t.id)}
+                  />
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ── Locations tab ─────────────────────────────────────── */}
+        {activeTab === 'locations' && (
+          <div className="lg:grid lg:grid-cols-[360px_1fr] lg:gap-5 lg:items-start">
 
             {/* Storage spots */}
             <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5">
@@ -143,7 +299,6 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
                   <Plus size={14} /> Add
                 </button>
               </div>
-
               <div className="flex flex-col gap-2 mb-8 lg:mb-0">
                 {storageLocations.map(loc => {
                   const base = bases.find(b => b.id === loc.base_id)
@@ -179,7 +334,7 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
             </div>
 
             {/* Groups */}
-            <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5">
+            <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5 mt-4 lg:mt-0">
               <div className="flex items-center justify-between mb-2">
                 <SectionLabel>Groups</SectionLabel>
                 <button onClick={() => setAddBaseOpen(true)} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
@@ -206,16 +361,16 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
             </div>
 
           </div>
+        )}
 
-          {/* ══ RIGHT COLUMN ═════════════════════════════════════ */}
-          <div className="lg:flex lg:flex-col lg:gap-4">
+        {/* ── Tags tab ──────────────────────────────────────────── */}
+        {activeTab === 'tags' && (
+          <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-5 lg:items-start max-w-4xl">
 
-            {/* Tags */}
+            {/* Tag groups */}
             <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5">
-              <div className="flex items-center justify-between mt-4 lg:mt-0 mb-3">
-                <SectionLabel>Tags</SectionLabel>
-              </div>
-              <div className="space-y-5">
+              <SectionLabel>Tags</SectionLabel>
+              <div className="space-y-5 mt-3">
                 {tagGroups.map(group => (
                   <TagGroupSection
                     key={group.id}
@@ -255,7 +410,7 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
             </div>
 
             {/* Outfit slots */}
-            <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5 mt-4 lg:mt-0">
+            <div className="lg:bg-base-100 lg:border lg:border-base-200 lg:rounded-2xl lg:shadow-sm lg:p-5 mt-8 lg:mt-0">
               <div className="flex items-center justify-between mb-3">
                 <SectionLabel>Outfit slots</SectionLabel>
               </div>
@@ -271,10 +426,7 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
                         order {slot.display_order}{slot.allow_multiple ? ' · multiple' : ''}
                       </div>
                     </div>
-                    <button
-                      onClick={() => openEditSlot(slot)}
-                      className="btn btn-circle btn-ghost btn-sm text-base-content/55"
-                    >
+                    <button onClick={() => openEditSlot(slot)} className="btn btn-circle btn-ghost btn-sm text-base-content/55">
                       <Pencil size={17} strokeWidth={1.8} />
                     </button>
                     <button
@@ -287,7 +439,6 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
                   </div>
                 ))}
               </div>
-
               <div className="flex gap-2 items-center mb-2">
                 <input
                   value={newSlotName}
@@ -304,7 +455,7 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
                   <Plus size={14} /> Add
                 </button>
               </div>
-              <label className="flex items-center gap-2 text-[13px] text-base-content/60 cursor-pointer select-none mb-8 lg:mb-0">
+              <label className="flex items-center gap-2 text-[13px] text-base-content/60 cursor-pointer select-none">
                 <button
                   type="button"
                   onClick={() => setNewSlotMultiple(v => !v)}
@@ -317,10 +468,75 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
             </div>
 
           </div>
-        </div>
+        )}
+
+        {/* ── Members tab (admin only) ──────────────────────────── */}
+        {activeTab === 'members' && isAdmin && (
+          <div className="max-w-lg">
+
+            {members.length === 0 && pending.length === 0 ? (
+              <p className="text-[13px] text-base-content/40 py-10 text-center">No members yet.</p>
+            ) : (
+              <>
+                <div className="bg-base-100 border border-base-200 rounded-2xl overflow-hidden">
+                  {members.map((m, i) => (
+                    <div
+                      key={m.user_id}
+                      className={`flex items-center gap-3 px-4 py-3 ${i < members.length - 1 ? 'border-b border-base-200' : ''}`}
+                    >
+                      <span className="flex-1 text-[13.5px] truncate">{m.email}</span>
+                      {m.is_admin && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary shrink-0">
+                          <ShieldCheck size={13} strokeWidth={2} /> Admin
+                        </span>
+                      )}
+                      <button
+                        onClick={() => router.push(`/${m.user_id}/items`)}
+                        className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-base-content/45 hover:text-primary transition-colors"
+                      >
+                        Browse <ArrowUpRight size={12} strokeWidth={2} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {pending.length > 0 && (
+                  <div className="mt-5">
+                    <div className="text-[11px] font-semibold text-base-content/45 uppercase tracking-wider mb-2">
+                      Pending approval
+                    </div>
+                    <div className="bg-base-100 border border-base-200 rounded-2xl overflow-hidden">
+                      {pending.map((u, i) => (
+                        <div
+                          key={u.id}
+                          className={`flex items-center gap-3 px-4 py-3 ${i < pending.length - 1 ? 'border-b border-base-200' : ''}`}
+                        >
+                          <span className="flex-1 text-[13.5px] truncate text-base-content/60">{u.email}</span>
+                          <button
+                            onClick={() => handleApprove(u.id)}
+                            disabled={isPending}
+                            className="btn btn-xs btn-primary rounded-full"
+                          >
+                            {isPending ? <span className="loading loading-spinner loading-xs" /> : 'Approve'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {pending.length === 0 && (
+                  <p className="text-[12px] text-base-content/40 mt-3 px-1">No pending sign-ups.</p>
+                )}
+              </>
+            )}
+
+          </div>
+        )}
+
       </div>
 
-      {/* ── Location editor sheet ────────────────────────────── */}
+      {/* ── Location editor sheet ─────────────────────────────── */}
       <BottomSheet open={!!editingLoc} onClose={() => setEditingLoc(null)} title={editingLoc?.id ? 'Edit spot' : 'New storage spot'}>
         <div className="flex flex-col gap-4">
           <div>
@@ -363,7 +579,7 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
         </div>
       </BottomSheet>
 
-      {/* ── Add group sheet ──────────────────────────────────── */}
+      {/* ── Add group sheet ───────────────────────────────────── */}
       <BottomSheet open={addBaseOpen} onClose={() => setAddBaseOpen(false)} title="New group">
         <div className="flex flex-col gap-4">
           <div>
@@ -402,7 +618,7 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
         </div>
       </BottomSheet>
 
-      {/* ── Edit slot sheet ──────────────────────────────────── */}
+      {/* ── Edit slot sheet ───────────────────────────────────── */}
       <BottomSheet open={!!editingSlot} onClose={() => setEditingSlot(null)} title="Edit slot">
         <div className="flex flex-col gap-4">
           <div>
@@ -458,7 +674,36 @@ export default function ManageClient({ bases, storageLocations, tagGroups, locat
           </div>
         </div>
       </BottomSheet>
+
     </div>
+  )
+}
+
+// ── Local components ──────────────────────────────────────────────
+
+function ThemeCard({ id, label, active, onClick }: { id: string; label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'rounded-xl overflow-hidden border-2 text-left transition-all',
+        active
+          ? 'border-primary ring-2 ring-primary/25'
+          : 'border-base-300 hover:border-base-content/20',
+      ].join(' ')}
+    >
+      <div data-theme={id} className="flex h-9">
+        <span className="flex-1 bg-primary" />
+        <span className="flex-1 bg-secondary" />
+        <span className="flex-1 bg-accent" />
+        <span className="flex-1 bg-neutral" />
+      </div>
+      <div className="bg-base-100 px-2 py-1.5 flex items-center justify-between gap-1">
+        <span className="text-[11px] font-semibold text-base-content truncate leading-tight">{label}</span>
+        {active && <Check size={11} strokeWidth={2.5} className="text-primary shrink-0" />}
+      </div>
+    </button>
   )
 }
 

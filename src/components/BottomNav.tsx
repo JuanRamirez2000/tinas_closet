@@ -2,15 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid, Layers, Settings2, Plus, Settings } from 'lucide-react'
+import { LayoutGrid, Layers, Settings2, Plus } from 'lucide-react'
 import { useLoggedInUserId } from '@/context/user'
 
 interface Props {
-  onOpenSettings: () => void
   isAdmin?: boolean
 }
 
-export default function BottomNav({ onOpenSettings, isAdmin = false }: Props) {
+export default function BottomNav({ isAdmin = false }: Props) {
   const pathname = usePathname()
   const loggedInUserId = useLoggedInUserId()
 
@@ -47,7 +46,6 @@ export default function BottomNav({ onOpenSettings, isAdmin = false }: Props) {
           <span className="text-[10.5px] font-medium">Outfits</span>
         </Link>
 
-        {/* FAB — Quick add (admin only) */}
         {isAdmin ? (
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
@@ -68,13 +66,8 @@ export default function BottomNav({ onOpenSettings, isAdmin = false }: Props) {
           <span className="text-[10.5px] font-medium">Manage</span>
         </Link>
 
-        <button
-          onClick={onOpenSettings}
-          className={`flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${inactive}`}
-        >
-          <Settings size={22} strokeWidth={1.9} />
-          <span className="text-[10.5px] font-medium">Settings</span>
-        </button>
+        {/* Spacer to balance the FAB */}
+        <div className="flex-1" />
       </div>
     </nav>
   )
