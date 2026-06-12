@@ -6,6 +6,7 @@ import { Search, X, Plus, LayoutGrid } from 'lucide-react'
 import { createOutfit } from '@/app/actions/outfits'
 import { useIsAdmin } from '@/context/admin'
 import { useViewingUserId } from '@/context/user'
+import Dialog from '@/components/Dialog'
 import PhotoTile from '@/components/PhotoTile'
 import type { OutfitSlot } from '@/lib/types'
 
@@ -101,54 +102,38 @@ export default function OutfitsClient({ outfits, slots }: Props) {
         )}
       </div>
 
-      {/* New outfit modal */}
+      {/* New outfit dialog */}
       {modalOpen && (
-        <div
-          className="fixed inset-0 z-60 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
-          style={{ background: 'rgba(60,50,70,.5)' }}
-          onMouseDown={e => { if (e.target === e.currentTarget) closeModal() }}
-        >
-          <div className="bg-base-100 rounded-3xl shadow-xl w-full my-auto max-w-sm">
-
-            <div className="flex items-center justify-between px-6 py-4 border-b border-base-200">
-              <h2 className="text-lg font-bold">New outfit</h2>
-              <button onClick={closeModal} className="btn btn-circle btn-ghost btn-sm">
-                <X size={18} strokeWidth={2} />
-              </button>
+        <Dialog title="New outfit" onClose={closeModal}>
+          <div className="p-6 flex flex-col gap-4">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mb-1.5">Name</div>
+              <input
+                autoFocus
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                placeholder="e.g. Sunday brunch look"
+                className="input input-bordered w-full rounded-xl"
+                onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
+              />
             </div>
-
-            <div className="p-6 flex flex-col gap-4">
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-base-content/40 mb-1.5">Name</div>
-                <input
-                  autoFocus
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  placeholder="e.g. Sunday brunch look"
-                  className="input input-bordered w-full rounded-xl"
-                  onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
-                />
-              </div>
-              <p className="text-[12.5px] text-base-content/45">
-                You&apos;ll pick pieces for each slot on the next screen.
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-base-200">
-              <button onClick={closeModal} className="btn btn-ghost rounded-full">Cancel</button>
-              <button
-                onClick={handleCreate}
-                disabled={!newName.trim() || isPending}
-                className="btn btn-primary rounded-full gap-1.5 disabled:opacity-40"
-              >
-                {isPending
-                  ? <span className="loading loading-spinner loading-sm" />
-                  : <><Plus size={15} strokeWidth={2.2} /> Create</>}
-              </button>
-            </div>
-
+            <p className="text-[12.5px] text-base-content/45">
+              You&apos;ll pick pieces for each slot on the next screen.
+            </p>
           </div>
-        </div>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-base-200">
+            <button onClick={closeModal} className="btn btn-ghost rounded-full">Cancel</button>
+            <button
+              onClick={handleCreate}
+              disabled={!newName.trim() || isPending}
+              className="btn btn-primary rounded-full gap-1.5 disabled:opacity-40"
+            >
+              {isPending
+                ? <span className="loading loading-spinner loading-sm" />
+                : <><Plus size={15} strokeWidth={2.2} /> Create</>}
+            </button>
+          </div>
+        </Dialog>
       )}
     </div>
   )
@@ -168,7 +153,6 @@ function OutfitCard({ outfit, slots, viewingUserId }: { outfit: OutfitPreview; s
       onClick={() => router.push(`/${viewingUserId}/outfits/${outfit.id}`)}
       className="bg-base-100 border border-base-200 rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-sm transition-all text-left group"
     >
-      {/* Thumbnail grid */}
       <div className="grid grid-cols-2 gap-0.5 bg-base-200 aspect-square">
         {[0, 1, 2, 3].map(i => {
           const thumb = slotThumbs[i]
@@ -190,8 +174,6 @@ function OutfitCard({ outfit, slots, viewingUserId }: { outfit: OutfitPreview; s
           )
         })}
       </div>
-
-      {/* Card footer */}
       <div className="px-3 py-2.5">
         <div className="font-medium text-[14px] truncate group-hover:text-primary transition-colors">
           {outfit.name}

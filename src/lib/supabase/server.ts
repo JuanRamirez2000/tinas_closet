@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
 // Returns an untyped client. Query results are typed via explicit casts
 // (as unknown as MyType) at the call site rather than via generics,
@@ -29,4 +30,11 @@ export async function createClient() {
       },
     }
   )
+}
+
+export async function requireUser() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  return { supabase, user }
 }

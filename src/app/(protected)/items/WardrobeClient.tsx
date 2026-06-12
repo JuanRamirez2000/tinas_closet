@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo, useTransition, useCallback, useEffect } from 'react'
+import { useState, useMemo, useTransition, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useIsAdmin } from '@/context/admin'
 import { useViewingClosetName, useViewingUserId } from '@/context/user'
+import { useShellSettings } from '@/context/shell'
 import {
   Search, X, SlidersHorizontal, ArrowUpDown, Box,
   LayoutGrid, Plus, Heart,
@@ -32,6 +33,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
   const isAdmin = useIsAdmin()
   const viewingClosetName = useViewingClosetName()
   const viewingUserId = useViewingUserId()
+  const { quickAddOpen, setQuickAddOpen } = useShellSettings()
   const [isPending, startTransition] = useTransition()
 
   const [search, setSearch] = useState('')
@@ -50,14 +52,6 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
 
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [deletingItem, setDeletingItem] = useState<Item | null>(null)
-  const [quickAddOpen, setQuickAddOpen] = useState(false)
-
-  useEffect(() => {
-    if (!isAdmin) return
-    const open = () => setQuickAddOpen(true)
-    window.addEventListener('quick-add:open', open)
-    return () => window.removeEventListener('quick-add:open', open)
-  }, [isAdmin])
 
   const typeGroup   = useMemo(() => tagGroups.find(g => g.name === 'Type'),   [tagGroups])
   const colorGroup  = useMemo(() => tagGroups.find(g => g.name === 'Color'),  [tagGroups])
@@ -196,7 +190,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
             )}
           </label>
 
-          {/* Type chips + filter button (filter button only on mobile) */}
+          {/* Type chips + filter button */}
           <div className="mt-3 flex items-center gap-2">
             <div className="flex gap-2 overflow-x-auto no-sb -mx-1 px-1 py-0.5 flex-1">
               {['All', ...types].map(tp => (
@@ -222,7 +216,7 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
         {/* Grid */}
         <div className="flex-1 px-4 pb-28 lg:pb-10 lg:px-6">
           {filtered.length === 0 ? (
-            <EmptyGrid hasItems={items.length > 0} onClear={clearFilters} isAdmin={isAdmin} />
+            <EmptyGrid hasItems={items.length > 0} onClear={clearFilters} isAdmin={isAdmin} onAdd={() => setQuickAddOpen(true)} />
           ) : (
             <div className="grid gap-3 pt-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
               {filtered.map(item => (
@@ -296,26 +290,23 @@ export default function WardrobeClient({ items, storageLocations, tagGroups, loc
       {/* ── Move sheet ──────────────────────────────────────────── */}
       <BottomSheet open={moveOpen} onClose={() => setMoveOpen(false)} title={`Move ${selected.size} item${selected.size === 1 ? '' : 's'} to…`}>
         <div className="flex flex-col gap-1.5">
-          {storageLocations.map(loc => {
-            const base = (loc as StorageLocation & { base_locations?: { name: string } }).base_locations
-            return (
-              <button
-                key={loc.id}
-                onClick={() => doMove(loc.id)}
-                disabled={isPending}
-                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-base-200 text-left"
-              >
-                <span className="w-9 h-9 rounded-xl bg-base-200 flex items-center justify-center text-base-content/60">
-                  <Box size={18} strokeWidth={1.7} />
-                </span>
-                <span className="flex-1">
-                  <span className="font-medium block leading-tight">{loc.name}</span>
-                  {base && <span className="text-[12px] text-base-content/45">{base.name}</span>}
-                </span>
-                <ArrowUpDown size={16} strokeWidth={1.8} />
-              </button>
-            )
-          })}
+          {storageLocations.map(loc => (
+            <button
+              key={loc.id}
+              onClick={() => doMove(loc.id)}
+              disabled={isPending}
+              className="flex items-center gap-3 p-3 rounded-2xl hover:bg-base-200 text-left"
+            >
+              <span className="w-9 h-9 rounded-xl bg-base-200 flex items-center justify-center text-base-content/60">
+                <Box size={18} strokeWidth={1.7} />
+              </span>
+              <span className="flex-1">
+                <span className="font-medium block leading-tight">{loc.name}</span>
+                {loc.base_locations && <span className="text-[12px] text-base-content/45">{loc.base_locations.name}</span>}
+              </span>
+              <ArrowUpDown size={16} strokeWidth={1.8} />
+            </button>
+          ))}
         </div>
       </BottomSheet>
     </div>
@@ -415,7 +406,7 @@ function FilterBody({
 }
 
 // ── Empty grid ─────────────────────────────────────────────────────────────
-function EmptyGrid({ hasItems, onClear, isAdmin }: { hasItems: boolean; onClear: () => void; isAdmin: boolean }) {
+function EmptyGrid({ hasItems, onClear, isAdmin, onAdd }: { hasItems: boolean; onClear: () => void; isAdmin: boolean; onAdd: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-20 px-8">
       <div className="w-16 h-16 rounded-3xl bg-base-200 flex items-center justify-center text-base-content/35 mb-4">
@@ -432,10 +423,7 @@ function EmptyGrid({ hasItems, onClear, isAdmin }: { hasItems: boolean; onClear:
       {hasItems ? (
         <button onClick={onClear} className="btn btn-sm btn-ghost rounded-full">Clear filters</button>
       ) : isAdmin ? (
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
-          className="btn btn-primary rounded-full gap-1.5"
-        >
+        <button onClick={onAdd} className="btn btn-primary rounded-full gap-1.5">
           <Plus size={17} strokeWidth={2.2} /> Add a piece
         </button>
       ) : null}

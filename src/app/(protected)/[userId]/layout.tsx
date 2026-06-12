@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import SettingsShell from '@/components/SettingsShell'
 
@@ -9,10 +9,7 @@ interface Props {
 
 export default async function UserClosetLayout({ children, params }: Props) {
   const { userId } = await params
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user } = await requireUser()
 
   const isOwnCloset = userId === user.id
 

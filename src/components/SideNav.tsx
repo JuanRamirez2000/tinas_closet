@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutGrid, Layers, Settings2, Plus } from 'lucide-react'
 import { useLoggedInUserId } from '@/context/user'
+import { useShellSettings } from '@/context/shell'
 
 interface Props {
   closetName: string
@@ -13,6 +14,7 @@ interface Props {
 export default function SideNav({ closetName, isAdmin = false }: Props) {
   const pathname = usePathname()
   const loggedInUserId = useLoggedInUserId()
+  const { setQuickAddOpen } = useShellSettings()
 
   const isWardrobe = pathname.includes('/items')
   const isOutfits  = pathname.includes('/outfits')
@@ -39,7 +41,7 @@ export default function SideNav({ closetName, isAdmin = false }: Props) {
 
       {isAdmin && (
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
+          onClick={() => setQuickAddOpen(true)}
           className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary text-primary-content text-[13.5px] font-medium transition-opacity hover:opacity-90"
         >
           <Plus size={16} strokeWidth={2.2} />

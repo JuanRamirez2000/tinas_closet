@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutGrid, Layers, Settings2, Plus } from 'lucide-react'
 import { useLoggedInUserId } from '@/context/user'
+import { useShellSettings } from '@/context/shell'
 
 interface Props {
   isAdmin?: boolean
@@ -12,6 +13,7 @@ interface Props {
 export default function BottomNav({ isAdmin = false }: Props) {
   const pathname = usePathname()
   const loggedInUserId = useLoggedInUserId()
+  const { setQuickAddOpen } = useShellSettings()
 
   const isWardrobe = pathname.includes('/items')
   const isOutfits  = pathname.includes('/outfits')
@@ -48,7 +50,7 @@ export default function BottomNav({ isAdmin = false }: Props) {
 
         {isAdmin ? (
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent('quick-add:open'))}
+            onClick={() => setQuickAddOpen(true)}
             className="shrink-0 -mt-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-primary text-primary-content"
             aria-label="Quick add"
           >

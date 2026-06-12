@@ -10,11 +10,13 @@ import { updateItem, deleteItem, toggleFavorite } from '@/app/actions/items'
 import { useIsAdmin } from '@/context/admin'
 import { useViewingUserId } from '@/context/user'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
+import { useToggleSet } from '@/hooks/useToggleSet'
 import Chip from '@/components/Chip'
 import PhotoTile from '@/components/PhotoTile'
-import BottomSheet from '@/components/BottomSheet'
+import TagChipGroup from '@/components/TagChipGroup'
 import SectionLabel from '@/components/SectionLabel'
-import type { BaseLocation, Item, StorageLocation, TagGroup, Tag } from '@/lib/types'
+import BottomSheet from '@/components/BottomSheet'
+import type { BaseLocation, Item, StorageLocation, TagGroup } from '@/lib/types'
 
 interface Props {
   item: Item
@@ -38,18 +40,8 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
   const [favorite, setFavorite] = useState(item.favorite ?? false)
   const [locSheetOpen, setLocSheetOpen] = useState(false)
 
-  const [tagIds, setTagIds] = useState<string[]>(
-    (item.item_tags as { tags: Tag }[] | undefined)?.map(it => it.tags.id) ?? []
-  )
-
-  // Capture initial values once — used to detect unsaved changes
-  const originalRef = useRef({
-    name: item.name,
-    notes: item.notes ?? '',
-    imageUrl: item.image_url ?? null,
-    storageId: item.storage_location_id ?? null,
-    tagIds: [...((item.item_tags as { tags: Tag }[] | undefined)?.map(it => it.tags.id) ?? [])].sort().join(','),
-  })
+  const initialTagIds = item.item_tags?.map(it => it.tags?.id).filter(Boolean) as string[] ?? []
+  const [tagIds, toggleTag] = useToggleSet(initialTagIds)
 
   const typeGroup    = tagGroups.find(g => g.name === 'Type')
   const colorGroup   = tagGroups.find(g => g.name === 'Color')
@@ -57,17 +49,21 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
   const seasonGroup  = tagGroups.find(g => g.name === 'Season')
   const customGroups = tagGroups.filter(g => !g.is_system)
 
-  const { current: orig } = originalRef
-  const dirty =
-    name !== orig.name ||
-    notes !== orig.notes ||
-    imageUrl !== orig.imageUrl ||
-    storageId !== orig.storageId ||
-    [...tagIds].sort().join(',') !== orig.tagIds
+  // Capture initial values once — used to detect unsaved changes
+  const origRef = useRef({
+    name: item.name,
+    notes: item.notes ?? '',
+    imageUrl: item.image_url ?? null,
+    storageId: item.storage_location_id ?? null,
+    tagIds: [...initialTagIds].sort().join(','),
+  })
 
-  function toggleTag(tagId: string) {
-    setTagIds(prev => prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId])
-  }
+  const dirty =
+    name !== origRef.current.name ||
+    notes !== origRef.current.notes ||
+    imageUrl !== origRef.current.imageUrl ||
+    storageId !== origRef.current.storageId ||
+    [...tagIds].sort().join(',') !== origRef.current.tagIds
 
   async function handlePhotoChange(file: File) {
     const url = await upload(file)
@@ -103,12 +99,6 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
 
   const currentLoc  = storageLocations.find(s => s.id === storageId)
   const currentBase = bases.find(b => b.id === currentLoc?.base_id)
-
-  const itemType   = (item.item_tags as { tags: Tag }[] | undefined)
-    ?.find(it => it.tags.group_id === typeGroup?.id)?.tags.value ?? null
-  const itemColors = (item.item_tags as { tags: Tag }[] | undefined)
-    ?.filter(it => it.tags.group_id === colorGroup?.id)
-    .map(it => it.tags.value) ?? []
 
   return (
     <div className="relative min-h-screen">
@@ -146,8 +136,6 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
           <PhotoTile
             imageUrl={imageUrl}
             name={item.name}
-            itemType={itemType}
-            itemColors={itemColors}
             className="w-full"
             radius="0"
             style={{ minHeight: 320, aspectRatio: '4/5' }}
@@ -201,69 +189,12 @@ export default function ItemDetailClient({ item, bases, storageLocations, tagGro
 
           {/* Tag sections */}
           <div className="mt-5 space-y-4">
-            {typeGroup && (typeGroup.tags ?? []).length > 0 && (
-              <div>
-                <SectionLabel>Type</SectionLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(typeGroup.tags ?? []).map(tag => (
-                    <Chip key={tag.id} size="sm" active={tagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {colorGroup && (colorGroup.tags ?? []).length > 0 && (
-              <div>
-                <SectionLabel>Color</SectionLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(colorGroup.tags ?? []).map(tag => (
-                    <Chip key={tag.id} size="sm" color={tag.value} active={tagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {styleGroup && (styleGroup.tags ?? []).length > 0 && (
-              <div>
-                <SectionLabel>Style</SectionLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(styleGroup.tags ?? []).map(tag => (
-                    <Chip key={tag.id} size="sm" active={tagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {seasonGroup && (seasonGroup.tags ?? []).length > 0 && (
-              <div>
-                <SectionLabel>Season</SectionLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(seasonGroup.tags ?? []).map(tag => (
-                    <Chip key={tag.id} size="sm" active={tagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
+            <TagChipGroup group={typeGroup} selectedIds={tagIds} onToggle={toggleTag} Label={SectionLabel} />
+            <TagChipGroup group={colorGroup} selectedIds={tagIds} onToggle={toggleTag} withColor Label={SectionLabel} />
+            <TagChipGroup group={styleGroup} selectedIds={tagIds} onToggle={toggleTag} Label={SectionLabel} />
+            <TagChipGroup group={seasonGroup} selectedIds={tagIds} onToggle={toggleTag} Label={SectionLabel} />
             {customGroups.map(group => (
-              <div key={group.id}>
-                <SectionLabel>{group.name}</SectionLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(group.tags ?? []).map(tag => (
-                    <Chip key={tag.id} size="sm" active={tagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
+              <TagChipGroup key={group.id} group={group} selectedIds={tagIds} onToggle={toggleTag} Label={SectionLabel} />
             ))}
           </div>
 

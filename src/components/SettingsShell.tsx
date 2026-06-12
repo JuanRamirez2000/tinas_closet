@@ -28,11 +28,12 @@ export default function SettingsShell({
 }: Props) {
   const [closetName, setClosetName] = useState(initialClosetName)
   const [currentTheme, setCurrentTheme] = useState(initialTheme)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   const displayName = closetName.trim() || "Tina's Closet"
 
   return (
-    <ShellProvider value={{ theme: currentTheme, setTheme: setCurrentTheme, closetName, setClosetName }}>
+    <ShellProvider value={{ theme: currentTheme, setTheme: setCurrentTheme, closetName, setClosetName, quickAddOpen, setQuickAddOpen }}>
     <UserProvider value={{ loggedInUserId, viewingUserId, viewingClosetName }}>
     <IsAdminContext.Provider value={isAdmin}>
     <div

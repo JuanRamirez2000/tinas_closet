@@ -1,13 +1,17 @@
 'use client'
 
-import { useState, useRef, useTransition, useEffect } from 'react'
-import { X, Heart } from 'lucide-react'
-import Chip from '@/components/Chip'
+import { useState, useTransition, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Heart, Trash2, AlertTriangle } from 'lucide-react'
 import FieldLabel from '@/components/FieldLabel'
+import Dialog from '@/components/Dialog'
+import PhotoUploadBox from '@/components/PhotoUploadBox'
+import TagChipGroup from '@/components/TagChipGroup'
+import Chip from '@/components/Chip'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
-import { updateItem } from '@/app/actions/items'
+import { useToggleSet } from '@/hooks/useToggleSet'
+import { updateItem, deleteItem } from '@/app/actions/items'
 import type { Item, StorageLocation, TagGroup } from '@/lib/types'
-import { Camera } from 'lucide-react'
 
 interface Props {
   item: Item | null
@@ -17,16 +21,17 @@ interface Props {
 }
 
 export default function EditItemModal({ item, storageLocations, tagGroups, onClose }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const { upload, isUploading } = usePhotoUpload()
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState('')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+  const [selectedTagIds, toggleTag, setSelectedTagIds] = useToggleSet([])
   const [storageId, setStorageId] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
   const [favorite, setFavorite] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   useEffect(() => {
     if (!item) return
@@ -36,7 +41,7 @@ export default function EditItemModal({ item, storageLocations, tagGroups, onClo
     setStorageId(item.storage_location_id)
     setNotes(item.notes ?? '')
     setFavorite(item.favorite)
-  }, [item])
+  }, [item, setSelectedTagIds])
 
   const typeGroup   = tagGroups.find(g => g.name === 'Type')
   const colorGroup  = tagGroups.find(g => g.name === 'Color')
@@ -48,12 +53,6 @@ export default function EditItemModal({ item, storageLocations, tagGroups, onClo
   async function handleFile(file: File) {
     const url = await upload(file)
     if (url) setImageUrl(url)
-  }
-
-  function toggleTag(tagId: string) {
-    setSelectedTagIds(prev =>
-      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
-    )
   }
 
   function handleSave() {
@@ -73,203 +72,144 @@ export default function EditItemModal({ item, storageLocations, tagGroups, onClo
     })
   }
 
+  function handleDelete() {
+    if (!item) return
+    const itemId = item.id
+    startTransition(async () => {
+      await deleteItem(itemId)
+      onClose()
+      router.refresh()
+    })
+  }
+
   const canSave = name.trim() && !isPending && !isUploading
 
   return (
-    <div
-      className="fixed inset-0 z-60 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
-      style={{ background: 'rgba(60,50,70,.5)' }}
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div className="bg-base-100 rounded-3xl shadow-xl w-full my-auto max-w-2xl lg:max-w-3xl">
+    <Dialog size="lg" title="Edit piece" onClose={onClose}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-base-200">
-          <h2 className="text-lg font-bold">Edit piece</h2>
-          <button onClick={onClose} className="btn btn-circle btn-ghost btn-sm">
-            <X size={18} strokeWidth={2} />
-          </button>
+      {/* Body */}
+      <div className="p-6 grid sm:grid-cols-[200px_1fr] lg:grid-cols-[240px_1fr] gap-6 max-h-[75vh] overflow-y-auto">
+
+        {/* Left: photo + favorite */}
+        <div>
+          <PhotoUploadBox
+            value={imageUrl}
+            onChange={setImageUrl}
+            isUploading={isUploading}
+            onFilePick={handleFile}
+          />
+
+          <label className="flex items-center gap-2 mt-3 cursor-pointer select-none px-1">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-sm rounded-md"
+              checked={favorite}
+              onChange={e => setFavorite(e.target.checked)}
+            />
+            <span className="text-sm font-medium flex items-center gap-1.5">
+              <Heart
+                size={14}
+                strokeWidth={1.8}
+                fill={favorite ? 'currentColor' : 'none'}
+                className={favorite ? 'text-primary' : ''}
+              />
+              Favorite
+            </span>
+          </label>
         </div>
 
-        {/* Body */}
-        <div className="p-6 grid sm:grid-cols-[200px_1fr] lg:grid-cols-[240px_1fr] gap-6 max-h-[75vh] overflow-y-auto">
-
-          {/* Left: photo + favorite */}
+        {/* Right: fields */}
+        <div className="flex flex-col gap-4">
           <div>
-            <div
-              onClick={() => fileRef.current?.click()}
-              className={[
-                'relative cursor-pointer rounded-2xl border-2 border-dashed transition-colors',
-                'flex flex-col items-center justify-center text-center aspect-4/5 overflow-hidden',
-                'border-base-300 bg-base-200/40 hover:border-primary/60',
-              ].join(' ')}
-            >
-              {imageUrl ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={e => { e.stopPropagation(); setImageUrl(null) }}
-                    className="absolute top-2 right-2 btn btn-circle btn-xs bg-base-100/90 border-0"
-                  >
-                    <X size={14} />
-                  </button>
-                </>
-              ) : (
-                <div className="text-base-content/45 px-3">
-                  {isUploading
-                    ? <span className="loading loading-spinner loading-md" />
-                    : (
-                      <>
-                        <div className="flex justify-center mb-2">
-                          <Camera size={26} strokeWidth={1.6} />
-                        </div>
-                        <div className="text-sm font-semibold text-base-content/60">Drop a photo</div>
-                        <div className="font-mono text-[10px] mt-1 uppercase tracking-wide">or click to browse</div>
-                      </>
-                    )
-                  }
-                </div>
-              )}
-            </div>
-
-            <label className="flex items-center gap-2 mt-3 cursor-pointer select-none px-1">
-              <input
-                type="checkbox"
-                className="checkbox checkbox-sm rounded-md"
-                checked={favorite}
-                onChange={e => setFavorite(e.target.checked)}
-              />
-              <span className="text-sm font-medium flex items-center gap-1.5">
-                <Heart
-                  size={14}
-                  strokeWidth={1.8}
-                  fill={favorite ? 'currentColor' : 'none'}
-                  className={favorite ? 'text-primary' : ''}
-                />
-                Favorite
-              </span>
-            </label>
-
+            <FieldLabel>Name</FieldLabel>
             <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Blush puff-sleeve blouse"
+              className="input input-bordered w-full rounded-xl"
             />
           </div>
 
-          {/* Right: fields */}
-          <div className="flex flex-col gap-4">
+          <TagChipGroup group={typeGroup} selectedIds={selectedTagIds} onToggle={toggleTag} />
+          <TagChipGroup group={colorGroup} selectedIds={selectedTagIds} onToggle={toggleTag} withColor />
+          <TagChipGroup group={styleGroup} selectedIds={selectedTagIds} onToggle={toggleTag} />
+          <TagChipGroup group={seasonGroup} selectedIds={selectedTagIds} onToggle={toggleTag} />
+
+          {storageLocations.length > 0 && (
             <div>
-              <FieldLabel>Name</FieldLabel>
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="e.g. Blush puff-sleeve blouse"
-                className="input input-bordered w-full rounded-xl"
-              />
+              <FieldLabel>Where it lives</FieldLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {storageLocations.map(loc => (
+                  <Chip key={loc.id} size="sm" active={storageId === loc.id} onClick={() => setStorageId(loc.id)}>
+                    {loc.name}{loc.base_locations ? ` · ${loc.base_locations.name}` : ''}
+                  </Chip>
+                ))}
+              </div>
             </div>
+          )}
 
-            {typeGroup && (typeGroup.tags ?? []).length > 0 && (
-              <div>
-                <FieldLabel>Type</FieldLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(typeGroup.tags ?? []).map(tag => (
-                    <Chip key={tag.id} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {colorGroup && (colorGroup.tags ?? []).length > 0 && (
-              <div>
-                <FieldLabel>Color</FieldLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(colorGroup.tags ?? []).map(tag => (
-                    <Chip key={tag.id} color={tag.value} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {styleGroup && (styleGroup.tags ?? []).length > 0 && (
-              <div>
-                <FieldLabel>Style</FieldLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(styleGroup.tags ?? []).map(tag => (
-                    <Chip key={tag.id} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {seasonGroup && (seasonGroup.tags ?? []).length > 0 && (
-              <div>
-                <FieldLabel>Season</FieldLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(seasonGroup.tags ?? []).map(tag => (
-                    <Chip key={tag.id} size="sm" active={selectedTagIds.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
-                      {tag.value}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {storageLocations.length > 0 && (
-              <div>
-                <FieldLabel>Where it lives</FieldLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {storageLocations.map(loc => {
-                    const base = (loc as StorageLocation & { base_locations?: { name: string } }).base_locations
-                    return (
-                      <Chip key={loc.id} size="sm" active={storageId === loc.id} onClick={() => setStorageId(loc.id)}>
-                        {loc.name}{base ? ` · ${base.name}` : ''}
-                      </Chip>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <FieldLabel>Notes</FieldLabel>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Any notes…"
-                rows={3}
-                className="textarea textarea-bordered w-full rounded-xl resize-none text-[14px]"
-              />
-            </div>
+          <div>
+            <FieldLabel>Notes</FieldLabel>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Any notes…"
+              rows={3}
+              className="textarea textarea-bordered w-full rounded-xl resize-none text-[14px]"
+            />
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-base-200">
-          <button onClick={onClose} className="btn btn-ghost rounded-full">Cancel</button>
-          <button
-            disabled={!canSave}
-            onClick={handleSave}
-            className="btn btn-primary rounded-full gap-1 disabled:opacity-40"
-          >
-            {isPending
-              ? <span className="loading loading-spinner loading-sm" />
-              : 'Save changes'
-            }
-          </button>
-        </div>
-
       </div>
-    </div>
+
+      {/* Footer */}
+      {confirmingDelete ? (
+        <div className="px-6 py-4 border-t border-base-200 bg-error/5">
+          <div className="flex items-start gap-3 mb-4">
+            <AlertTriangle size={18} strokeWidth={1.8} className="text-error mt-0.5 shrink-0" />
+            <div>
+              <p className="text-[14px] font-semibold text-error">Delete &quot;{item?.name}&quot;?</p>
+              <p className="text-[12.5px] text-base-content/55 mt-0.5">This cannot be undone.</p>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setConfirmingDelete(false)} className="btn btn-ghost rounded-full btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className="btn btn-error rounded-full btn-sm gap-1.5 disabled:opacity-40"
+            >
+              {isPending ? <span className="loading loading-spinner loading-xs" /> : <><Trash2 size={14} strokeWidth={1.8} /> Delete</>}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2 px-6 py-4 border-t border-base-200">
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            disabled={isPending}
+            className="btn btn-ghost rounded-full text-error gap-1.5"
+          >
+            <Trash2 size={16} strokeWidth={1.8} />
+            Delete
+          </button>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="btn btn-ghost rounded-full">Cancel</button>
+            <button
+              disabled={!canSave}
+              onClick={handleSave}
+              className="btn btn-primary rounded-full gap-1 disabled:opacity-40"
+            >
+              {isPending
+                ? <span className="loading loading-spinner loading-sm" />
+                : 'Save changes'
+              }
+            </button>
+          </div>
+        </div>
+      )}
+
+    </Dialog>
   )
 }

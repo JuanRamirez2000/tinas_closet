@@ -47,6 +47,13 @@ export async function createTag(group_id: string, value: string) {
   revalidatePath('/manage')
 }
 
+export async function updateTag(id: string, value: string) {
+  const { supabase } = await getUser()
+  const { error } = await supabase.from('tags').update({ value }).eq('id', id)
+  if (error) throw error
+  revalidatePath('/manage')
+}
+
 export async function deleteTag(id: string) {
   const { supabase } = await getUser()
   const { error } = await supabase.from('tags').delete().eq('id', id)

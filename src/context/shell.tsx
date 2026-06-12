@@ -6,6 +6,8 @@ interface ShellContextValue {
   setTheme: (t: string) => void
   closetName: string
   setClosetName: (n: string) => void
+  quickAddOpen: boolean
+  setQuickAddOpen: (v: boolean) => void
 }
 
 const ShellContext = createContext<ShellContextValue>({
@@ -13,6 +15,8 @@ const ShellContext = createContext<ShellContextValue>({
   setTheme: () => {},
   closetName: '',
   setClosetName: () => {},
+  quickAddOpen: false,
+  setQuickAddOpen: () => {},
 })
 
 export const ShellProvider = ShellContext.Provider
