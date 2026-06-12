@@ -287,239 +287,243 @@ export default function ManageClient({
   // ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="px-4 lg:px-6 pt-3 lg:pt-6 pb-28 lg:pb-12 max-w-3xl">
+    <div className="px-4 lg:px-8 pt-3 lg:pt-6 pb-28 lg:pb-12">
       <h1 className="font-serif text-[26px] leading-none mb-7">Manage</h1>
 
-      {/* ── Settings ──────────────────────────────────────────── */}
-      <Section icon={<TagIcon size={16} strokeWidth={2} />} title="Settings">
-        <div className="space-y-5">
-          <div>
-            <SectionLabel>Closet name</SectionLabel>
-            <input
-              value={localClosetName}
-              onChange={e => setLocalClosetName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveClosetName() }}
-              onBlur={saveClosetName}
-              placeholder="Tina's Closet"
-              className="input input-bordered w-full max-w-sm rounded-xl mt-1.5"
-            />
-          </div>
-          <div>
-            <SectionLabel>Theme</SectionLabel>
-            <select
-              value={theme}
-              onChange={e => handleThemeChange(e.target.value)}
-              className="select select-bordered rounded-xl mt-1.5 w-full max-w-xs"
-            >
-              {THEMES.map(t => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </Section>
+      {/* ── Desktop 3-column grid ──────────────────────────────── */}
+      <div className="lg:grid lg:grid-cols-[260px_1fr_1fr] lg:gap-8 lg:items-start">
 
-      {/* ── Locations ─────────────────────────────────────────── */}
-      <Section icon={<MapPin size={16} strokeWidth={2} />} title="Storage">
-        <div className="lg:grid lg:grid-cols-[1fr_240px] lg:gap-5">
-
-          {/* Storage spots */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <SectionLabel>Storage spots</SectionLabel>
-              <button onClick={openNewLoc} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
-                <Plus size={14} /> Add
-              </button>
-            </div>
-            <div className="flex flex-col gap-2 mb-6 lg:mb-0">
-              {storageLocations.map(loc => {
-                const base = bases.find(b => b.id === loc.base_id)
-                const count = locationCounts[loc.id] ?? 0
-                return (
-                  <div key={loc.id} className="flex items-center gap-3 bg-base-100 border border-base-200 rounded-2xl p-3">
-                    <span className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center text-base-content/55">
-                      <Box size={19} strokeWidth={1.7} />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium leading-tight">{loc.name}</div>
-                      {base && (
-                        <div className="text-[12px] text-base-content/45 flex items-center gap-1.5">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60" />
-                          {base.name}
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-[12px] text-base-content/45 tabular-nums">{count}</span>
-                    <button onClick={() => openEditLoc(loc)} className="btn btn-circle btn-ghost btn-sm text-base-content/55">
-                      <Pencil size={17} strokeWidth={1.8} />
-                    </button>
-                  </div>
-                )
-              })}
-              {storageLocations.length === 0 && (
-                <p className="text-[13px] text-base-content/40 py-4">No storage spots yet.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Groups */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <SectionLabel>Groups</SectionLabel>
-              <button onClick={openNewBase} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
-                <Plus size={14} /> Add
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {bases.map(base => (
-                <button
-                  key={base.id}
-                  onClick={() => openEditBase(base)}
-                  className="flex items-center gap-1.5 bg-base-200 hover:bg-base-300 rounded-full px-3 py-1.5 text-[13px] transition-colors"
-                  disabled={isPending}
-                >
-                  {base.name}
-                  <Pencil size={11} strokeWidth={2} className="opacity-35" />
-                </button>
-              ))}
-              {bases.length === 0 && <p className="text-[13px] text-base-content/40 py-1">No groups yet.</p>}
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ── Tags ──────────────────────────────────────────────── */}
-      <Section icon={<TagIcon size={16} strokeWidth={2} />} title="Tags">
-        <div className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-5">
-
-          {/* Tag groups */}
-          <div>
-            <div className="space-y-5 mb-5">
-              {tagGroups.map(group => (
-                <TagGroupSection
-                  key={group.id}
-                  group={group}
-                  newValue={newTagValues[group.id] ?? ''}
-                  onNewValueChange={v => setNewTagValues(prev => ({ ...prev, [group.id]: v }))}
-                  onAdd={() => handleAddTag(group.id, newTagValues[group.id] ?? '')}
-                  onEdit={openEditTag}
-                  onDeleteGroup={!group.is_system ? () => setDeletingGroup({ id: group.id, name: group.name }) : undefined}
-                  isPending={isPending}
+        {/* ── Col 1: Settings + Members ────────────────────────── */}
+        <div>
+          <Section icon={<TagIcon size={16} strokeWidth={2} />} title="Settings">
+            <div className="space-y-5">
+              <div>
+                <SectionLabel>Closet name</SectionLabel>
+                <input
+                  value={localClosetName}
+                  onChange={e => setLocalClosetName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveClosetName() }}
+                  onBlur={saveClosetName}
+                  placeholder="Tina's Closet"
+                  className="input input-bordered w-full rounded-xl mt-1.5"
                 />
-              ))}
-            </div>
-            <form
-              onSubmit={e => {
-                e.preventDefault()
-                if (!newGroupName.trim()) return
-                startTransition(async () => {
-                  await createTagGroup(newGroupName.trim())
-                  setNewGroupName('')
-                })
-              }}
-              className="flex gap-2"
-            >
-              <input
-                className="flex-1 bg-base-200/60 rounded-xl px-3.5 h-11 outline-none focus:bg-base-200 text-[14px]"
-                placeholder="New tag group name…"
-                value={newGroupName}
-                onChange={e => setNewGroupName(e.target.value)}
-              />
-              <button className="btn btn-primary rounded-xl" type="submit" disabled={isPending}>Add group</button>
-            </form>
-          </div>
-
-          {/* Outfit slots */}
-          <div className="mt-8 lg:mt-0">
-            <div className="flex items-center justify-between mb-3">
-              <SectionLabel>Outfit slots</SectionLabel>
-            </div>
-            <div className="flex flex-col gap-2 mb-4">
-              {outfitSlots.map(slot => (
-                <div key={slot.id} className="flex items-center gap-3 bg-base-100 border border-base-200 rounded-2xl p-3">
-                  <span className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center text-base-content/55">
-                    <Layers size={18} strokeWidth={1.7} />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium leading-tight">{slot.name}</div>
-                    <div className="text-[11px] text-base-content/40 mt-0.5">
-                      order {slot.display_order}{slot.allow_multiple ? ' · multiple' : ''}
-                    </div>
-                  </div>
-                  <button onClick={() => openEditSlot(slot)} className="btn btn-circle btn-ghost btn-sm text-base-content/55">
-                    <Pencil size={17} strokeWidth={1.8} />
-                  </button>
-                </div>
-              ))}
-              {outfitSlots.length === 0 && <p className="text-[13px] text-base-content/40 py-2">No slots yet.</p>}
-            </div>
-            <div className="flex gap-2 items-center mb-2">
-              <input
-                value={newSlotName}
-                onChange={e => setNewSlotName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleAddSlot() }}
-                placeholder="New slot name…"
-                className="flex-1 bg-base-200/60 rounded-xl px-3.5 h-11 outline-none focus:bg-base-200 text-[14px]"
-              />
-              <button onClick={handleAddSlot} disabled={!newSlotName.trim() || isPending} className="btn btn-primary rounded-xl disabled:opacity-40">
-                <Plus size={14} /> Add
-              </button>
-            </div>
-            <label className="flex items-center gap-2 text-[13px] text-base-content/60 cursor-pointer select-none">
-              <button type="button" onClick={() => setNewSlotMultiple(v => !v)} className={newSlotMultiple ? 'text-primary' : 'text-base-content/30'}>
-                {newSlotMultiple ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-              </button>
-              Allow multiple items in this slot
-            </label>
-          </div>
-        </div>
-      </Section>
-
-      {/* ── Members (admin only) ───────────────────────────────── */}
-      {isAdmin && (
-        <Section icon={<Users size={16} strokeWidth={2} />} title="Members">
-          <div className="max-w-lg">
-            {members.length === 0 && pending.length === 0 ? (
-              <p className="text-[13px] text-base-content/40 py-6 text-center">No members yet.</p>
-            ) : (
-              <>
-                <div className="bg-base-100 border border-base-200 rounded-2xl overflow-hidden">
-                  {members.map((m, i) => (
-                    <div key={m.user_id} className={`flex items-center gap-3 px-4 py-3 ${i < members.length - 1 ? 'border-b border-base-200' : ''}`}>
-                      <span className="flex-1 text-[13.5px] truncate">{m.email}</span>
-                      {m.is_admin && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary shrink-0">
-                          <ShieldCheck size={13} strokeWidth={2} /> Admin
-                        </span>
-                      )}
-                      <button onClick={() => router.push(`/${m.user_id}/items`)} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-base-content/45 hover:text-primary transition-colors">
-                        Browse <ArrowUpRight size={12} strokeWidth={2} />
-                      </button>
-                    </div>
+              </div>
+              <div>
+                <SectionLabel>Theme</SectionLabel>
+                <select
+                  value={theme}
+                  onChange={e => handleThemeChange(e.target.value)}
+                  className="select select-bordered rounded-xl mt-1.5 w-full"
+                >
+                  {THEMES.map(t => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
                   ))}
-                </div>
+                </select>
+              </div>
+            </div>
+          </Section>
 
-                {pending.length > 0 && (
-                  <div className="mt-5">
-                    <div className="text-[11px] font-semibold text-base-content/45 uppercase tracking-wider mb-2">Pending approval</div>
+          {/* Members (admin only) */}
+          {isAdmin && (
+            <Section icon={<Users size={16} strokeWidth={2} />} title="Members">
+              <div>
+                {members.length === 0 && pending.length === 0 ? (
+                  <p className="text-[13px] text-base-content/40 py-6 text-center">No members yet.</p>
+                ) : (
+                  <>
                     <div className="bg-base-100 border border-base-200 rounded-2xl overflow-hidden">
-                      {pending.map((u, i) => (
-                        <div key={u.id} className={`flex items-center gap-3 px-4 py-3 ${i < pending.length - 1 ? 'border-b border-base-200' : ''}`}>
-                          <span className="flex-1 text-[13.5px] truncate text-base-content/60">{u.email}</span>
-                          <button onClick={() => handleApprove(u.id)} disabled={isPending} className="btn btn-xs btn-primary rounded-full">
-                            {isPending ? <span className="loading loading-spinner loading-xs" /> : 'Approve'}
+                      {members.map((m, i) => (
+                        <div key={m.user_id} className={`flex items-center gap-3 px-4 py-3 ${i < members.length - 1 ? 'border-b border-base-200' : ''}`}>
+                          <span className="flex-1 text-[13px] truncate">{m.email}</span>
+                          {m.is_admin && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary shrink-0">
+                              <ShieldCheck size={13} strokeWidth={2} /> Admin
+                            </span>
+                          )}
+                          <button onClick={() => router.push(`/${m.user_id}/items`)} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-base-content/45 hover:text-primary transition-colors">
+                            Browse <ArrowUpRight size={12} strokeWidth={2} />
                           </button>
                         </div>
                       ))}
                     </div>
-                  </div>
+                    {pending.length > 0 && (
+                      <div className="mt-4">
+                        <div className="text-[11px] font-semibold text-base-content/45 uppercase tracking-wider mb-2">Pending approval</div>
+                        <div className="bg-base-100 border border-base-200 rounded-2xl overflow-hidden">
+                          {pending.map((u, i) => (
+                            <div key={u.id} className={`flex items-center gap-3 px-4 py-3 ${i < pending.length - 1 ? 'border-b border-base-200' : ''}`}>
+                              <span className="flex-1 text-[13px] truncate text-base-content/60">{u.email}</span>
+                              <button onClick={() => handleApprove(u.id)} disabled={isPending} className="btn btn-xs btn-primary rounded-full">
+                                {isPending ? <span className="loading loading-spinner loading-xs" /> : 'Approve'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {pending.length === 0 && <p className="text-[12px] text-base-content/40 mt-3 px-1">No pending sign-ups.</p>}
+                  </>
                 )}
-                {pending.length === 0 && <p className="text-[12px] text-base-content/40 mt-3 px-1">No pending sign-ups.</p>}
-              </>
-            )}
-          </div>
-        </Section>
-      )}
+              </div>
+            </Section>
+          )}
+        </div>
+
+        {/* ── Col 2: Storage ───────────────────────────────────── */}
+        <div>
+          <Section icon={<MapPin size={16} strokeWidth={2} />} title="Storage">
+            {/* Storage spots */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <SectionLabel>Storage spots</SectionLabel>
+                <button onClick={openNewLoc} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {storageLocations.map(loc => {
+                  const base = bases.find(b => b.id === loc.base_id)
+                  const count = locationCounts[loc.id] ?? 0
+                  return (
+                    <div key={loc.id} className="flex items-center gap-3 bg-base-100 border border-base-200 rounded-2xl p-3">
+                      <span className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center text-base-content/55">
+                        <Box size={19} strokeWidth={1.7} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium leading-tight">{loc.name}</div>
+                        {base && (
+                          <div className="text-[12px] text-base-content/45 flex items-center gap-1.5">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60" />
+                            {base.name}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[12px] text-base-content/45 tabular-nums">{count}</span>
+                      <button onClick={() => openEditLoc(loc)} className="btn btn-circle btn-ghost btn-sm text-base-content/55">
+                        <Pencil size={17} strokeWidth={1.8} />
+                      </button>
+                    </div>
+                  )
+                })}
+                {storageLocations.length === 0 && (
+                  <p className="text-[13px] text-base-content/40 py-4">No storage spots yet.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Groups */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <SectionLabel>Groups</SectionLabel>
+                <button onClick={openNewBase} className="btn btn-xs btn-ghost rounded-full gap-1 text-primary">
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {bases.map(base => (
+                  <button
+                    key={base.id}
+                    onClick={() => openEditBase(base)}
+                    className="flex items-center gap-1.5 bg-base-200 hover:bg-base-300 rounded-full px-3 py-1.5 text-[13px] transition-colors"
+                    disabled={isPending}
+                  >
+                    {base.name}
+                    <Pencil size={11} strokeWidth={2} className="opacity-35" />
+                  </button>
+                ))}
+                {bases.length === 0 && <p className="text-[13px] text-base-content/40 py-1">No groups yet.</p>}
+              </div>
+            </div>
+          </Section>
+        </div>
+
+        {/* ── Col 3: Tags + Outfit slots ────────────────────────── */}
+        <div>
+          <Section icon={<TagIcon size={16} strokeWidth={2} />} title="Tags">
+            {/* Tag groups */}
+            <div className="mb-8">
+              <div className="space-y-5 mb-5">
+                {tagGroups.map(group => (
+                  <TagGroupSection
+                    key={group.id}
+                    group={group}
+                    newValue={newTagValues[group.id] ?? ''}
+                    onNewValueChange={v => setNewTagValues(prev => ({ ...prev, [group.id]: v }))}
+                    onAdd={() => handleAddTag(group.id, newTagValues[group.id] ?? '')}
+                    onEdit={openEditTag}
+                    onDeleteGroup={!group.is_system ? () => setDeletingGroup({ id: group.id, name: group.name }) : undefined}
+                    isPending={isPending}
+                  />
+                ))}
+              </div>
+              <form
+                onSubmit={e => {
+                  e.preventDefault()
+                  if (!newGroupName.trim()) return
+                  startTransition(async () => {
+                    await createTagGroup(newGroupName.trim())
+                    setNewGroupName('')
+                  })
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  className="flex-1 bg-base-200/60 rounded-xl px-3.5 h-11 outline-none focus:bg-base-200 text-[14px]"
+                  placeholder="New tag group name…"
+                  value={newGroupName}
+                  onChange={e => setNewGroupName(e.target.value)}
+                />
+                <button className="btn btn-primary rounded-xl" type="submit" disabled={isPending}>Add group</button>
+              </form>
+            </div>
+
+            {/* Outfit slots */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <SectionLabel>Outfit slots</SectionLabel>
+              </div>
+              <div className="flex flex-col gap-2 mb-4">
+                {outfitSlots.map(slot => (
+                  <div key={slot.id} className="flex items-center gap-3 bg-base-100 border border-base-200 rounded-2xl p-3">
+                    <span className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center text-base-content/55">
+                      <Layers size={18} strokeWidth={1.7} />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium leading-tight">{slot.name}</div>
+                      <div className="text-[11px] text-base-content/40 mt-0.5">
+                        order {slot.display_order}{slot.allow_multiple ? ' · multiple' : ''}
+                      </div>
+                    </div>
+                    <button onClick={() => openEditSlot(slot)} className="btn btn-circle btn-ghost btn-sm text-base-content/55">
+                      <Pencil size={17} strokeWidth={1.8} />
+                    </button>
+                  </div>
+                ))}
+                {outfitSlots.length === 0 && <p className="text-[13px] text-base-content/40 py-2">No slots yet.</p>}
+              </div>
+              <div className="flex gap-2 items-center mb-2">
+                <input
+                  value={newSlotName}
+                  onChange={e => setNewSlotName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddSlot() }}
+                  placeholder="New slot name…"
+                  className="flex-1 bg-base-200/60 rounded-xl px-3.5 h-11 outline-none focus:bg-base-200 text-[14px]"
+                />
+                <button onClick={handleAddSlot} disabled={!newSlotName.trim() || isPending} className="btn btn-primary rounded-xl disabled:opacity-40">
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-[13px] text-base-content/60 cursor-pointer select-none">
+                <button type="button" onClick={() => setNewSlotMultiple(v => !v)} className={newSlotMultiple ? 'text-primary' : 'text-base-content/30'}>
+                  {newSlotMultiple ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                </button>
+                Allow multiple items in this slot
+              </label>
+            </div>
+          </Section>
+        </div>
+
+      </div> {/* end 3-col grid */}
 
       {/* ── Storage spot modal ─────────────────────────────────── */}
       {editingLoc !== null && (
